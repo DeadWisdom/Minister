@@ -1,0 +1,91 @@
+body, td {
+    font-family: Verdana, Arial, "MS Trebuchet", sans-serif;
+    font-size: 14px;
+}
+
+h1 {
+    padding: 18px 24px;
+    font-size: 24px;
+    color: #555;
+}
+
+#main {
+    position: relative;
+    margin: 0px 25px;
+}
+
+/*** App ******/
+.item {
+    position: relative;
+    min-height: 36px;
+    padding: 9px 0px 6px 58px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+
+.item .icon {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 8px;
+    width: 45px;
+    background-position: left;
+    background-repeat: no-repeat;
+}
+
+.item:hover {
+    background-color: #EEE;
+    cursor: pointer;
+}
+
+.item .info, .item .url {
+    font-size: .8em;
+    color: #444;
+    margin: 6px 0px;
+}
+
+.item .url {
+    display: none;
+}
+
+.loading:hover {
+    background-color: white;
+    cursor: default;
+}
+
+.loading .name {
+    margin-top: 8px;
+}
+
+.disabled .info { color: #AAA; }
+.active .info, .loading .info { color: #9ec167; }
+.struggling .info { color: #bc7468; }
+.failed .info { color: #bc7468; }
+
+.disabled .icon    { background-image: url(icons/-gray.png);  }
+.unknown .icon     { background-image: url(icons/-gray.png);  }
+.active .icon      { background-image: url(icons/-green.png); }
+.struggling .icon  { background-image: url(icons/-green.png); }
+.failed .icon      { background-image: url(icons/-red.png);   }
+
+.loading .icon     { background-image: url(icons/loading.gif); }
+
+.unknown.info      { color: #AAA; }
+.unknown:hover {
+    cursor: default;
+    background-color: white;
+}
+
+/*** Tea ******/
+.t-stack {
+    
+}
+
+.t-panel .t-focuser {
+    display: none;
+}
+
+.t-panel .t-title {
+    padding-bottom: 8px;
+    font-size: 12px;
+}

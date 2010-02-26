@@ -1,0 +1,216 @@
+import os, sys, signal, errno, time
+
+from eventlet.green import socket
+
+try:
+    from minister.resource import Resource
+    from minister.util import json, print_tb, fix_unicode_keys
+except ImportError:
+    print os.environ
+    raise RuntimeError("Unnable to find minister in our environment.")
+
+class Deployment(Resource):
+    ### Properties #######################
+    address = ('', 0)
+    args = None
+    before_deploy = []
+    disabled = False
+    environ = {}
+    executable = sys.executable
+    layout = None
+    manager = None
+    name = 'Unnamed Deployment'
+    num_processes = 2
+    path = None
+    requires = ['minister', 'eventlet']
+    sites = None
+    type = 'deployment'
+    url = None
+
+    ### Class Methods #####################
+    @classmethod
+    def rebuild(cls, dct=None):
+        if dct is None:
+            dct = fix_unicode_keys( json.loads(os.environ['DEPLOY_JSON']) )
+        
+        instance = Resource(**dct)
+        
+        if '_socket' in dct:
+            fd = dct.pop('_socket')
+            instance._socket = socket.fromfd( fd, socket.AF_INET, socket.SOCK_STREAM )
+        
+        return instance
+    
+    ### Instance Methods ###################
+    def init(self):
+        if not getattr(self, '_socket', None):
+            from minister.proxy import Proxy
+        
+            self._debug = False
+        
+            self._socket = socket.socket()
+            self._socket.bind(tuple(self.address))
+            self._socket.listen(500)
+        
+            self.address = self._socket.getsockname()
+            self._proxy = Proxy(address=self.address)
+            self._processes = []
+        
+        self.layout = Resource.manifest(self.layout)
+    
+    def simple(self):
+        """
+        Return the simplified properties of this instance so that it can be JSONed.
+        """
+        dct = dict((k, v) for k, v in self.__dict__.items() if not k.startswith('_'))
+        dct['_socket'] = self._socket.fileno()
+        if self.layout:
+            dct['layout'] = self.layout.simple()
+        return dct
+    
+    def get_environ(self):
+        """
+        This dictionary is added to our environment for a child process.
+        """
+        environ = os.environ.copy()
+        environ.update(self.environ)
+        environ.update({
+            'DEPLOY_URL': str(self.url),
+            'DEPLOY_PATH': str(self.path),
+            'DEPLOY_SOCKET': str(self._socket.fileno()),
+            'DEPLOY_JSON': json.dumps(self.simple()),
+        })
+        return environ
+    
+    def __call__(self, environ, start_response):
+        """
+        For use as a wsgi app, will pipe to our proxy.
+        """
+        if self.layout:
+            environ['DEPLOY_PATH'] = self.path
+            response = self.layout(environ, start_response)
+            del environ['DEPLOY_PATH']
+            if response:
+                return response
+        
+        return self._proxy(environ, start_response)
+    
+    def start(self):
+        self.stop()
+        if self.before_deploy:
+            self.shell(self.before_deploy)
+        for i in xrange(self.num_processes):
+            try:
+                process = Process(self.path, self.executable, self.args, self.get_environ())
+                self._processes.append( process )
+                process.run()
+            except Exception, e:
+                print "Process failed."
+                print_tb(e)
+    
+    def shell(self, cmd):
+        from minister.util import system
+        if isinstance(cmd, basestring):
+            cmd = {'command': cmd}
+        if isinstance(cmd, list):
+            return "\n".join(self.shell(c[1]) for c in cmd)
+        if 'path' in cmd:
+            path = os.path.join(self.path, cmd['path'])
+        else:
+            path = self.path
+        result, content = system(path, cmd['command'], cmd.get('args', []))
+        if result != 0:
+            raise RuntimeError("Command failed:", cmd)
+        return content
+    
+    def stop(self):
+        for process in self._processes:
+            process.kill()
+        self._processes = []
+    
+    def check_status(self):
+        if self.disabled:
+            return "disabled"
+        
+        active = 0
+        for process in self._processes:
+            done, status = process.check()
+            if not done:
+                active += 1
+            elif process.is_failure():
+                process.kill()
+                self._processes.remove(process)
+            else:
+                process.kill()
+                process.run()
+                active += .5
+        
+        total = len(self._processes)
+        
+        if active == 0:
+            return 'failed', '0 of %d processes' % total
+        elif active == total:
+            return 'active', '%d of %d processes' % (active, total)
+        elif active < total:
+            return 'struggling', '%d of %d processes' % (active, total)
+
+class Process(object):
+    def __init__(self, path=None, executable=sys.executable, args=[], environ={}):
+        self.pid = None
+        self.path = os.path.abspath( path )
+        self.executable = executable
+        self.args = args
+        self.environ = environ
+        self.events = []
+    
+    def run(self):
+        self.event('run')
+        self.pid = os.fork()
+        if not self.pid:
+            try:
+                self._exec()
+            except Exception, e:
+                print "Error starting process:"
+                print_tb(e)
+                sys._exit(0)
+    
+    def event(self, name):
+        self.events.append((name, time.clock()))
+        self.events = self.events[:20]
+    
+    def check(self):
+        try:
+            return os.waitpid(self.pid, os.WNOHANG)
+        except OSError, e:
+            if e.errno == 10:
+                return True, None
+        return 0, None
+    
+    def is_failure(self, leeway=30):
+        runs = filter(lambda x: x[0] == 'run', self.events)
+        if len(runs) < 3:
+            return False
+        else:
+            #It's a failure if the third to last run was less than <leeway> seconds ago.
+            return (time.clock() - runs[-3][1]) < leeway
+    
+    def kill(self):
+        self.event('kill')
+        try:
+            os.kill(self.pid, signal.SIGHUP)
+            os.waitpid(self.pid, 0)
+            self.pid = None
+        except OSError:
+            pass
+    
+    def _exec(self):
+        try:
+            os.chdir(self.path)
+            args = [self.executable] + list(self.args)
+            os.execve(self.executable, args, self.environ)
+        except Exception, e:
+            print "Deployment failed."
+            print_tb(e)
+            os._exit(0)
+
+

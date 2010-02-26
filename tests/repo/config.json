@@ -1,0 +1,1 @@
+{"layout": {"type": "layout", "resources": [{"path": "@admin", "type": "admin"}, {"path": "/Users/deadwisdom/projects/sovereign/tests/repo/deployments/a", "type": "wsgi"}, {"path": "/Users/deadwisdom/projects/sovereign/tests/repo/deployments/b", "type": "wsgi"}, {"path": "/Users/deadwisdom/projects/sovereign/tests/repo/deployments/c", "type": "django"}, 
