@@ -1,9 +1,9 @@
 import os, sys
 import base
 
-class Deployment(base.Deployment):
+class Service(base.Service):
     type = 'wsgi'
-    name = "Unnamed Wsgi Deployment"
+    name = "Wsgi Service"
     args = [__file__]
     app = None
     
@@ -22,6 +22,6 @@ class Deployment(base.Deployment):
         wsgi.server(self._socket, self.resolve_app())
 
 if __name__ == '__main__':
-    sys.path.insert(0, os.environ['DEPLOY_PATH'])
-    deployment = Deployment.rebuild()
-    deployment.serve()
+    sys.path.insert(0, os.environ['SERVICE_PATH'])
+    service = Service.rebuild()
+    service.serve()

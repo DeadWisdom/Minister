@@ -45,6 +45,21 @@ class Resource(object):
     @classmethod
     def get_class(cls, type, default=None):
         return __types__.get(type, default)
+    
+    @classmethod
+    def create(cls, properties):
+        if properties is None:
+            return None
+        if isinstance(properties, Resource):
+            return properties
+        if isinstance(properties, list):
+            instance = ListLayout(resources=[cls.create(o) for o in properties])
+        else:
+            type = Resource.get_class(properties.get('type'), cls)
+            if not type:
+                raise RuntimeError("Unnable to find type:", type)
+            instance = type(**properties)
+        return instance
 
     def simple(self):
         simple = {'type': self.type}
@@ -106,14 +121,10 @@ class Layout(Resource):
     def add(self, resoures):
         self.resources += list(resoures)
 
-    def flatten(self, gather=None):
-        if gather is None:
-            gather = []
-        for r in self.resources:
-            gather.append(r)
-            if isinstance(r, Layout):
-                r.flatten(gather)
-        return gather
+class ListLayout(Layout):
+    """ Like a layout, but simplifies to a list. """
+    def simple(self):
+        return [o.simple() for o in self.resources]
 
 class App(Resource):
     """Turns any app into a resource."""

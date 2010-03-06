@@ -6,7 +6,8 @@ except ImportError:
     import simplejson as json
 
 import sys, os
-from deploy import Deployment
+from uuid import uuid4
+from service import Service
 from resource import Resource
 from source import Source
 from util import MutableFile, fix_unicode_keys, print_tb
@@ -23,24 +24,26 @@ TOKEN_STATES = {
     "mia":              "Cannot Deploy, as deployment source is missing.",
 }
 
-class Token(Resource):
-    type = None             # Should be the deployment Type.
-    src = ""
-    path = ""
-    disabled = False
-    layout = None
-    
+class ServiceToken(Resource):
     ### Initialization ###
-    def init(self):
-        self._deployment = None
+    def __init__(self, properties=None):
+        self.properties = properties
+        self.properties['path'] = properties.get('path')
+        
+        self._service = None
         self._thread = None
-        self._changed = False
         self._status = "building"
         self._extra = ""
         self._config = None
         self._config_file = None
-        type, _, src = self.src.partition(":")
-        self._source = Source(type=type, src=src)
+        self._manager = None
+        
+        src = self.properties.get('src')
+        if src:
+            type, _, src = src.partition(":")
+            self._source = Source(type=type, src=src)
+        else:
+            self._source = None
     
     ### Properties ###
     def get_status(self):
@@ -57,15 +60,13 @@ class Token(Resource):
         self._extra = extra
     extra = property(get_extra, set_extra)
     
-    
     @property
-    def slug(self):
-        return os.path.basename( os.path.abspath(self.path) )
-    
+    def path(self):
+        return self.properties['path']
     
     ### Methods ###
     def deploy(self):
-        if self._deployment:
+        if self._service:
             return
         self._thread = api.spawn(self._deploy)
         self.status = 'deploying'
@@ -76,53 +77,57 @@ class Token(Resource):
             return
         
         self.status = 'updating'
-        if not self.path.startswith('@'):
+        if self._source is not None:    
             if not self._source.update(self.path):
                 self.status = 'mia'
                 return
-                
+        
         self.status = "deploying"
         
         try:
             config = {}
             config.update(self.load_config())
-            config.update(self.simple())
+            config.update(self.properties)
             
-            self._deployment = self._manager.create_resource(config)
+            self._service = Resource.create(config)
+            self._service._manager = self._manager
         except Exception, e:
             print_tb(e)
             raise e
         
-        if self._deployment.disabled:
+        if self._service.disabled:
             self.status = 'disabled'
         else:
-            self._deployment.start()
+            print "Start:", self.path
+            self._service.start()
         
         self.monitor()
     
     def match_path(self, path):
-        if not self._deployment:
+        if not self._service:
             raise RuntimeError("Token not deployed.")
-        if self._deployment.disabled:
+        if self._service.disabled:
             return False
-        url = self._deployment.url
+        url = self._service.url
         if url is None:
             return path
         if url is not None and path.startswith(url):
             return path[len(url):]
     
     def match_sites(self, hostname):
-        if not self._deployment:
+        if not self._service:
             raise RuntimeError("Token not deployed.")
-        if self._deployment.disabled:
+        if self._service.disabled:
             return False
-        if self._deployment.sites is None:
+        if self._service.sites is None:
             return True
-        if hostname in self._deployment.sites:
+        if hostname in self._service.sites:
             return True
     
     def check_source(self):
-        return self._source.check(self.path)
+        if self._source:
+            return self._source.check(self.path)
+        return True
         
     def is_valid(self):
         config = self.load_config()
@@ -131,7 +136,7 @@ class Token(Resource):
         return False
             
     def load_config(self):
-        path = os.path.join( self.path, 'deploy.json' )
+        path = os.path.join( self.properties.get('path'), 'deploy.json' )
         if os.path.exists(path):
             try:
                 self._config_file = MutableFile(path)
@@ -158,9 +163,9 @@ class Token(Resource):
             api.kill(self._thread)
             self._thread = None
         
-        if self._deployment:
-            self._deployment.stop()
-            self._deployment = None
+        if self._service:
+            self._service.stop()
+            self._service = None
         
     def redeploy(self):
         self.status = 'redeploying'
@@ -169,14 +174,14 @@ class Token(Resource):
     
     def monitor(self, interval=0.5):
         while True:
-            if self._changed or (self._config_file and self._config_file.is_stale()):
+            if self._config_file and self._config_file.is_stale():
                 return self.redeploy()
-            self.status = self._deployment.check_status()
+            self.status = self._service.check_status()
             api.sleep(interval)
     
     def info(self):
-        if (self._deployment):
-            info = self._deployment.simple()
+        if (self._service):
+            info = self._service.simple()
         else:
             info = self.simple()
         info['status'], info['statusText'] = self._status
@@ -190,6 +195,9 @@ class Token(Resource):
         self._withdraw()
         shutil.rmtree(self.path, True)
     
+    def simple(self):
+        return self.properties.copy()
+    
     def __call__(self, environ, start_response):
-        return self._deployment(environ, start_response)
+        return self._service(environ, start_response)
         

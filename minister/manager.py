@@ -4,159 +4,125 @@ from eventlet import wsgi, api
 from eventlet.green import socket
 
 from http import Http404
-from resource import Layout, Resource
-from tokens import Token
-from deploy import Deployment
+from resource import Resource
+from tokens import ServiceToken
+from service import Service
 from util import json, fix_unicode_keys, print_tb
 
-class Manager(object):
-    def __init__(self, path=None, config=None):        
-        # Place our cwd in the Python Path:
-        pypath = os.environ.get('PYTHONPATH')
-        if pypath:
-            os.environ['PYTHONPATH'] = "%s:%s" % (os.path.abspath(os.curdir), pypath)
-        else:
-            os.environ['PYTHONPATH'] = os.path.abspath(os.curdir)
-        
-        path = os.path.abspath(path)
-        if not os.path.isdir(path):
-            os.makedirs(path)
-        self.path = path
-        self.tokens = {}
-        self.socket = None
-        self.threads = []
-        self.layout = None
-        self.config = config
-        self.load()
+class Manager(Resource):
+    type = 'manager'
+    path = None
+    layout = None
+    services = None
     
-    def create_resource(self, properties):
-        if properties is None:
-            return None
-        if isinstance(properties, Resource):
-            return properties
-        if isinstance(properties, list):
-            instance = Layout(resources=[self.create_resource(o) for o in properties])
-        else:
-            type = Resource.get_class(properties.get('type'))
-            if not type:
-                raise RuntimeError("Unnable to find type:", type)
-            if issubclass(type, Deployment):
-                type = Token
-            instance = type(**properties)
-        instance._manager = self
-        return instance
-    
-    def load(self):
-        self.tokens = {}
+    def init(self):
+        print self.services
         
-        if self.config is None:
-            try:
-                file = open(os.path.join(self.path, 'config.json'))
-                self.config = fix_unicode_keys( json.load( file ) )
-            except IOError, e:
-                self.config = {
-                    'layout': [{ 'type': 'admin', 'path': '@admin' }],
-                }
-            for k, v in self.config.items():
-                setattr(self, k, v)
+        self.path = os.path.abspath(self.path)
+        if not os.path.isdir(self.path):
+            os.makedirs(self.path)
         
-        self.layout = self.create_resource( self.layout, tokenize=True )
+        tokens = [ServiceToken(s) for s in self.services]
+        for t in tokens:
+            t._manager = self
+        self.services = Resource.create( tokens )
+        self.layout = Resource.create( self.layout or [] )
         
-        for t in self.layout.flatten():
-            if isinstance(t, Token):
-                self.tokens[t.path] = t
-                t._manager = self
+        self._tokens = dict((t.path, t) for t in tokens)
+        self._threads = []
+        self._socket = None
     
     def save(self):
         file = open(os.path.join(self.path, 'config.json'), 'w')
         json.dump(self.simple(), file)
-        
-    def simple(self):
-        return {
-            'layout': self.layout.simple()
-        }
     
     def close(self):
-        while self.threads:
-            api.kill( self.threads.pop() )
-        if self.socket:
+        while self._threads:
+            api.kill( self._threads.pop() )
+        if self._socket:
             try:
-                self.socket.shutdown()
+                self._socket.shutdown()
             except:
                 pass
-        for token in self.tokens:
+        for token in self.services.resources:
             try:
                 token.withdraw()
             except:
                 pass
     
     def serve(self, address=('', 8000), debug=False):
-        if self.socket:
+        if self._socket:
             return
         
-        for token in self.tokens.values():
-            print "deploying -", token.slug
+        for token in self._tokens.values():
+            print "loading service -", token.properties.get('path')
             token.deploy()
             
-        dep_path = os.path.join(self.path, 'deployments')
-        if not os.path.exists(dep_path):
-            os.makedirs(dep_path)
+        service_path = os.path.join(self.path, 'services')
+        if not os.path.exists(service_path):
+            os.makedirs(service_path)
         
-        self.monitor(self.scan, 1)
-        self.monitor(self.update, 60 * 30)
+        self.periodically(self.scan, 1)
+        self.periodically(self.update, 60 * 30)
         
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.socket.bind(address)
-            self.socket.listen(500)
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self._socket.bind(address)
+            self._socket.listen(500)
             
-            wsgi.server(self.socket, self.route, log=open(os.devnull, 'w'))
+            wsgi.server(self._socket, self)#, log=open(os.devnull, 'w'))
         finally:
             self.close()
         
-    def route(self, environ, start_response):
+    def __call__(self, environ, start_response):
         environ['PATH_DELTA'] = environ['PATH_INFO'][1:]
+        
         response = self.layout(environ, start_response)
-        if response is None:
-            return Http404(environ, start_response)
-        return response
+        if response is not None:
+            return response
+        
+        response = self.services(environ, start_response)
+        if response is not None:
+            return response
+        
+        return Http404(environ, start_response)
     
-    def monitor(self, method, interval=1):
+    def periodically(self, method, interval=1):
         def loop():
             while True:
+                api.sleep(interval)
                 try:
                     method()
                 except Exception, e:
                     from util import print_tb
                     print_tb(e)
-                api.sleep(interval)
-        self.threads.append( api.spawn(loop) )
+        self._threads.append( api.spawn(loop) )
     
     def update(self):
-        for token in self.tokens.values():
+        for token in self._tokens.values():
             if token.status in ("active", "failed", "disabled", "mia"):
                 if token.check_source():
                     token.redeploy()
                 
     def scan(self):
-        dep_path = os.path.join(self.path, 'deployments')
+        service_path = os.path.join(self.path, 'services')
         new = []
-        for filename in os.listdir( dep_path ):
-            path = os.path.join(dep_path, filename)
-            if os.path.isdir(path) and path not in self.tokens:
-                t = Token(path=os.path.abspath(path))
+        for filename in os.listdir( service_path ):
+            path = os.path.join(service_path, filename)
+            if os.path.isdir(path) and path not in self._tokens:
+                t = ServiceToken({'path': os.path.abspath(path)})
                 if t.is_valid():
                     new.append(t)
-                    self.tokens[path] = t
-                    self.layout.resources.append(t)
+                    self._tokens[t.path] = t
+                    self.services.resources.append(t)
                     t._manager = self
                     t.deploy()
         if new:
             self.save()
-            print "new deployments found:"
+            print "new services found:"
             for t in new:
-                print " ", t.path
+                print " ", t.properties.get('path')
 
 def run():
     from optparse import OptionParser
@@ -166,9 +132,9 @@ def run():
     
     parser.add_option("-p", "--path", 
                         dest="path", 
-                        help="Use PATH as the home directory, defaults to ~/.minister", 
+                        help="Use PATH as the home directory, defaults to /var/minister if run as root, or ~/.minister if not", 
                         metavar="PATH", 
-                        default="~/.minister")
+                        default=None)
                         
     parser.add_option("-u", "--user", 
                         dest="user", 
@@ -198,8 +164,20 @@ def run():
         except:
             parser.print_usage()
             return
+
+    if options.path is None:
+        options.path = os.path.expanduser("~/.minister")
+
+    try:
+        file = open(os.path.join(options.path, 'config.json'))
+        config = fix_unicode_keys( json.load( file ) )
+    except IOError, e:
+        config = {
+            'services': [{'type': 'admin', 'path': '@admin'}],
+        }
     
+    config['path'] = options.path
+    
+    manager = Manager(**config)
     atexit.register(manager.close)
-    
-    manager = Manager(path=options.path)
     manager.serve(address)

@@ -7,9 +7,9 @@ try:
     from minister.util import json, print_tb, fix_unicode_keys
 except ImportError:
     print os.environ
-    raise RuntimeError("Unnable to find minister in our environment.")
+    raise RuntimeError("Unable to find minister in our environment.")
 
-class Deployment(Resource):
+class Service(Resource):
     ### Properties #######################
     address = ('', 0)
     args = None
@@ -19,21 +19,21 @@ class Deployment(Resource):
     executable = sys.executable
     layout = None
     manager = None
-    name = 'Unnamed Deployment'
+    name = 'Unnamed Service'
     num_processes = 2
     path = None
     requires = ['minister', 'eventlet']
     sites = None
-    type = 'deployment'
+    type = 'service'
     url = None
 
     ### Class Methods #####################
     @classmethod
     def rebuild(cls, dct=None):
         if dct is None:
-            dct = fix_unicode_keys( json.loads(os.environ['DEPLOY_JSON']) )
+            dct = fix_unicode_keys( json.loads(os.environ['SERVICE_JSON']) )
         
-        instance = Resource(**dct)
+        instance = Resource.create(dct)
         
         if '_socket' in dct:
             fd = dct.pop('_socket')
@@ -56,7 +56,7 @@ class Deployment(Resource):
             self._proxy = Proxy(address=self.address)
             self._processes = []
         
-        self.layout = Resource.manifest(self.layout)
+        self.layout = Resource.create(self.layout)
     
     def simple(self):
         """
@@ -75,11 +75,18 @@ class Deployment(Resource):
         environ = os.environ.copy()
         environ.update(self.environ)
         environ.update({
-            'DEPLOY_URL': str(self.url),
-            'DEPLOY_PATH': str(self.path),
-            'DEPLOY_SOCKET': str(self._socket.fileno()),
-            'DEPLOY_JSON': json.dumps(self.simple()),
+            'SERVICE_URL': str(self.url),
+            'SERVICE_PATH': str(self.path),
+            'SERVICE_SOCKET': str(self._socket.fileno()),
+            'SERVICE_JSON': json.dumps(self.simple()),
         })
+        # Place our cwd in the Python Path:
+        pypath = environ.get('PYTHONPATH')
+        if pypath:
+            environ['PYTHONPATH'] = "%s:%s" % (os.path.abspath(os.curdir), pypath)
+        else:
+            environ['PYTHONPATH'] = os.path.abspath(os.curdir)
+        
         return environ
     
     def __call__(self, environ, start_response):
@@ -87,9 +94,9 @@ class Deployment(Resource):
         For use as a wsgi app, will pipe to our proxy.
         """
         if self.layout:
-            environ['DEPLOY_PATH'] = self.path
+            environ['SERVICE_PATH'] = self.path
             response = self.layout(environ, start_response)
-            del environ['DEPLOY_PATH']
+            del environ['SERVICE_PATH']
             if response:
                 return response
         
@@ -209,7 +216,7 @@ class Process(object):
             args = [self.executable] + list(self.args)
             os.execve(self.executable, args, self.environ)
         except Exception, e:
-            print "Deployment failed."
+            print "Process start failed."
             print_tb(e)
             os._exit(0)
 

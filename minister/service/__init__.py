@@ -1,4 +1,4 @@
-from base import Deployment
+from base import Service
 
 import django
 import php

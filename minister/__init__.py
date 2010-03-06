@@ -4,8 +4,4 @@
 #   layout      -  destroy tokens.json, make layout.json
 #   admin       -  fix the admin to work with the new layout
 
-from manager import Manager
-
-def serve(address=('', 8000), path=None, layout=None, debug=False):
-    manager = Manager(path, layout)
-    manager.serve(address, debug)
+from manager import Manager, run

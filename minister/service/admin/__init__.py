@@ -5,13 +5,13 @@ from minister.static import Static
 from minister.http import HttpResponse
 from minister.util import MutableFile, simple_template
 
-from minister.deploy import base
+from minister.service import base
 
 MEDIA_PATH = os.path.abspath(
     os.path.join( os.path.dirname(__file__), 'media' )
 )
 
-class Deployment(base.Deployment):
+class Service(base.Service):
     type = "admin"
     url = 'minister/'
     layout = Layout(resources=[
@@ -39,20 +39,20 @@ class Deployment(base.Deployment):
         path = environ['PATH_DELTA']
         if path == 'admin.html':
             return self.main(environ, start_response)
-        if path == 'deployments.json':
-            return self.deployments(environ, start_response)
+        if path == 'services.json':
+            return self.services(environ, start_response)
         return self.layout(environ, start_response)
     
     def main(self, environ, start_response):
         return HttpResponse(environ, start_response, simple_template(self._index.read(), {'url': '/%s' % self.url}))
     
-    def deployments(self, environ, start_response):
+    def services(self, environ, start_response):
         root = os.path.abspath( self._manager.path )
-        deployments = []
-        for token in self._manager.tokens.values():
-            deployments.append(token.info())
-        deployments.sort(key=lambda x: x.get('name', '-'))
-        content = simplejson.dumps(deployments)
+        services = []
+        for token in self._manager._tokens.values():
+            services.append(token.info())
+        services.sort(key=lambda x: x.get('name', '-'))
+        content = simplejson.dumps(services)
         return HttpResponse(environ, start_response, content=content, type='text/javascript')
     
     def simple(self):

@@ -31,9 +31,9 @@ Icon = Tea.Element.subclass({
     }
 });
 
-DeploymentItem = Tea.Container.subclass({
+ServiceItem = Tea.Container.subclass({
     options: {
-        cls: 'deployment item',
+        cls: 'service item',
         value: null
     },
     onInit : function()
@@ -54,7 +54,7 @@ DeploymentItem = Tea.Container.subclass({
     },
     setValue : function(v)
     {
-        this.source.attr('class', 'deployment item ' + v.status + ' ' + v.type);
+        this.source.attr('class', 'service item ' + v.status + ' ' + v.type);
         
         this.icon.setValue(v.status, v.type);
         this.name.setHTML(v.name);
@@ -66,7 +66,7 @@ DeploymentItem = Tea.Container.subclass({
     },
     setFail : function(v)
     {
-        this.source.attr('class', 'deployment item unknown');
+        this.source.attr('class', 'service item unknown');
         this.info.setHTML('unkown');
     }
 });
@@ -96,11 +96,11 @@ var App = new Tea.Application({
     {
         this.stack.render().appendTo('#main');
         
-        this.deployments = {};
-        this.deployment_panel = new Tea.Panel({title: 'Deployments'});
-        this.stack.push( this.deployment_panel );
+        this.services = {};
+        this.service_panel = new Tea.Panel({title: 'Services'});
+        this.stack.push( this.service_panel );
         
-        this.deployment_panel.append( this.loading = new LoadingElement() );
+        this.service_panel.append( this.loading = new LoadingElement() );
         
         this.load();
     },
@@ -108,35 +108,35 @@ var App = new Tea.Application({
     load : function()
     {
         $.ajax({
-            url: App.root + 'deployments.json', 
+            url: App.root + 'services.json', 
             success: Tea.method(this.onLoad, this),
             dataType: "json",
         });
     },
     
-    onLoad : function(deployments, status_code, request)
+    onLoad : function(services, status_code, request)
     {
-        if (deployments == null)
+        if (services == null)
         {
             this.timer = setTimeout(Tea.method(this.load, this), 3000);
             return this.onFail();
         }
         
-        this.deployment_panel.remove( this.loading );
+        this.service_panel.remove( this.loading );
         
         var all = {};
-        for(var i=0; i<deployments.length; i++)
+        for(var i=0; i<services.length; i++)
         {
-            this.setDeployment(deployments[i]);
-            all[deployments[i].path] = true;
+            this.setService(services[i]);
+            all[services[i].path] = true;
         }
         
-        for(var path in this.deployments)
+        for(var path in this.services)
         {
             if (!all[path])
             {
-                this.deployments[path].remove();
-                delete this.deployments[path];
+                this.services[path].remove();
+                delete this.services[path];
             }
         }
         
@@ -145,24 +145,24 @@ var App = new Tea.Application({
     
     onFail : function()
     {
-        for(var path in this.deployments)
+        for(var path in this.services)
         {
-            this.deployments[path].setFail();
+            this.services[path].setFail();
         }
     },
     
-    setDeployment : function(value)
+    setService : function(value)
     {
-        if (this.deployments[value.path])
+        if (this.services[value.path])
         {
-            this.deployments[value.path].setValue(value);
+            this.services[value.path].setValue(value);
         }
         else
         {
-            var d = this.deployments[value.path] = new DeploymentItem({
+            var d = this.services[value.path] = new ServiceItem({
                 value: value
             });
-            this.deployment_panel.append(d);
+            this.service_panel.append(d);
         }
     }
 })

@@ -1,15 +1,15 @@
 import os, sys
 import base
 
-class Deployment(base.Deployment):
+class Service(base.Service):
     type = 'django'
-    name = "Unnamed Django Deployment"
+    name = "Django Service"
     settings = 'settings'
     args = [__file__]
-    requires = base.Deployment.requires + ['django']
+    requires = base.Service.requires + ['django']
     
     def get_environ(self):
-        env = super(Deployment, self).get_environ()
+        env = super(Service, self).get_environ()
         env['DJANGO_SETTINGS_MODULE'] = self.settings
         return env
 
@@ -24,6 +24,6 @@ class Deployment(base.Deployment):
         wsgi.server(self._socket, app, log=open(os.devnull, 'w'))
 
 if __name__ == '__main__':
-    sys.path.insert(0, os.environ['DEPLOY_PATH'])
-    deployment = Deployment.rebuild()
-    deployment.serve()
+    sys.path.insert(0, os.environ['SERVICE_PATH'])
+    service = Service.rebuild()
+    service.serve()
