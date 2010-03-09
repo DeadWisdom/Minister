@@ -71,3 +71,6 @@ def print_tb(e):
         lines.append("\t%s: %s\n" % (key,value))
 
     print "".join(lines)
+
+def render_error(start_response, environ, error):
+    start_response(error, [])

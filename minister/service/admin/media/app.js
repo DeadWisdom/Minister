@@ -96,6 +96,8 @@ var App = new Tea.Application({
     {
         this.stack.render().appendTo('#main');
         
+        this.session.add_resource('service', {root: this.root + "services/"});
+        
         this.services = {};
         this.service_panel = new Tea.Panel({title: 'Services'});
         this.stack.push( this.service_panel );
@@ -108,7 +110,7 @@ var App = new Tea.Application({
     load : function()
     {
         $.ajax({
-            url: App.root + 'services.json', 
+            url: App.root + 'services/*.json',
             success: Tea.method(this.onLoad, this),
             dataType: "json",
         });

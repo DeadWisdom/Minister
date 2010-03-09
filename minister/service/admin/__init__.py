@@ -39,7 +39,8 @@ class Service(base.Service):
         path = environ['PATH_DELTA']
         if path == 'admin.html':
             return self.main(environ, start_response)
-        if path == 'services.json':
+        if path.startswith('services/'):
+            environ['PATH_DELTA'] = environ['PATH_DELTA'][len('services/'):]
             return self.services(environ, start_response)
         return self.layout(environ, start_response)
     
@@ -47,13 +48,15 @@ class Service(base.Service):
         return HttpResponse(environ, start_response, simple_template(self._index.read(), {'url': '/%s' % self.url}))
     
     def services(self, environ, start_response):
-        root = os.path.abspath( self._manager.path )
-        services = []
-        for token in self._manager._tokens.values():
-            services.append(token.info())
-        services.sort(key=lambda x: x.get('name', '-'))
-        content = simplejson.dumps(services)
-        return HttpResponse(environ, start_response, content=content, type='text/javascript')
+        path = environ['PATH_DELTA']
+        if path == '*.json':
+            root = os.path.abspath( self._manager.path )
+            services = []
+            for token in self._manager._tokens.values():
+                services.append(token.info())
+            services.sort(key=lambda x: x.get('name', '-'))
+            content = simplejson.dumps(services)
+            return HttpResponse(environ, start_response, content=content, type='text/javascript')
     
     def simple(self):
         return Resource.simple(self)
