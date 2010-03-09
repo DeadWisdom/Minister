@@ -5,20 +5,21 @@ template_base = """<html><head>
 <title>{{title}}</title>
 <style>
     body {font-family: Helvetica, Arial, sans-serif; color: #666; margin: 30px}
-    h1 {font-size: 24px; margin-top: 0px; }
+    h1 {font-size: 32px; margin-top: 0px; margin-bottom: 0px}
     a { color: #AD5561; text-decoration: none }
     a:hover { text-decoration: underline }
-    .list { font-size: 14px; margin-top: 22px }
+    .list { font-size: 14px; margin-top: 12px; }
     .list .frame { margin-bottom: 2px }
     .list .frame pre { margin: 4px 16px 12px; padding: 0; color: #79BD89 }
     .list .filename { display: none }
     .list .short { display: inline }
     .list .url { margin: 4px 10px; }
-    .list .extra { }
+    .byline { font-size: 14px; margin: 50px 0px 15px}
 </style>
 </head><body>
 <div class="server">minister webserver</div>
-<h1>{{exception}}</h1>
+<h1>{{title}}</h1>
+<div class='byline'>{{byline}}</div>
 <div class='list'>
     {{list}}
 </div>
@@ -39,8 +40,8 @@ def HttpDebug404(environ, start_response, manager):
     start_response('404 Not Found', [])
     return simple_template(template_base, {
         'title': '404 Not Found',
-        'list': "<div class='extra'>Available Resources:</div>" + "\n".join(urls),
-        'exception': '404 Not Found'
+        'list': "\n".join(urls),
+        'byline': 'Available Resources'
     })
 
 
@@ -54,7 +55,7 @@ def HttpDebug500(environ, start_response, exc):
     return simple_template(template_base, {
         'title': '500 Internal Server Error',
         'list': "\n".join(get_frames(tb)),
-        'exception': "%s: %s" % (exc_type.__name__, exc_value)
+        'byline': "%s: %s" % (exc_type.__name__, exc_value)
     })
 
 def get_frames(tb):

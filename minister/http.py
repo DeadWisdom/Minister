@@ -4,7 +4,7 @@ template = """<html><head>
 <title>{{title}}</title>
 <style>
     body {font-family: Helvetica, Arial, sans-serif; color: #666; margin: 30px}
-    h1 {font-size: 24px; margin-top: 0px; }
+    h1 {font-size: 32px; margin-top: 0px; }
 </style>
 </head><body>
 <div class="server">minister webserver</div>
