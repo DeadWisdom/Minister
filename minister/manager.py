@@ -3,17 +3,19 @@ import os, sys, atexit
 from eventlet import wsgi, api
 from eventlet.green import socket
 
-from http import Http404
+from http import Http404, Http500
 from resource import Resource
 from tokens import ServiceToken
 from service import Service
 from util import json, fix_unicode_keys, print_tb
+from debug import HttpDebug500, HttpDebug404
 
 class Manager(Resource):
     type = 'manager'
     path = None
     layout = None
     services = None
+    debug = True
     
     def init(self):
         print self.services
@@ -78,15 +80,25 @@ class Manager(Resource):
     def __call__(self, environ, start_response):
         environ['PATH_DELTA'] = environ['PATH_INFO'][1:]
         
-        response = self.layout(environ, start_response)
-        if response is not None:
-            return response
+        try:
+            response = self.layout(environ, start_response)
+            if response is not None:
+                return response
+            
+            response = self.services(environ, start_response)
+            if response is not None:
+                return response
+        except:
+            exc = sys.exc_info()
+            if self.debug:
+                return HttpDebug500(environ, start_response, exc)
+            else:
+                return Http500(environ, start_response)
         
-        response = self.services(environ, start_response)
-        if response is not None:
-            return response
-        
-        return Http404(environ, start_response)
+        if self.debug:
+            return HttpDebug404(environ, start_response, self)
+        else:
+            return Http404(environ, start_response)
     
     def periodically(self, method, interval=1):
         def loop():

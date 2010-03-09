@@ -1,0 +1,111 @@
+import traceback, os, re
+from util import simple_template, error_info
+
+template_base = """<html><head>
+<title>{{title}}</title>
+<style>
+    body {font-family: Helvetica, Arial, sans-serif; color: #666; margin: 30px}
+    h1 {font-size: 24px; margin-top: 0px; }
+    a { color: #AD5561; text-decoration: none }
+    a:hover { text-decoration: underline }
+    .list { font-size: 14px; margin-top: 22px }
+    .list .frame { margin-bottom: 2px }
+    .list .frame pre { margin: 4px 16px 12px; padding: 0; color: #79BD89 }
+    .list .filename { display: none }
+    .list .short { display: inline }
+    .list .url { margin: 4px 10px; }
+    .list .extra { }
+</style>
+</head><body>
+<div class="server">minister webserver</div>
+<h1>{{exception}}</h1>
+<div class='list'>
+    {{list}}
+</div>
+</body></html>"""
+
+url_template = """<div class='url'><a href="/{{url}}">/{{url}}</a></div>"""
+
+def HttpDebug404(environ, start_response, manager):
+    urls = []
+    for resource in manager.layout.resources:
+        urls.append( simple_template(url_template, {'url': resource.url}) )
+    
+    for resource in manager.services.resources:
+        url = resource._service.url
+        if not (resource._service.disabled or resource.disabled):
+            urls.append( simple_template(url_template, {'url': url}) )
+    
+    start_response('404 Not Found', [])
+    return simple_template(template_base, {
+        'title': '404 Not Found',
+        'list': "<div class='extra'>Available Resources:</div>" + "\n".join(urls),
+        'exception': '404 Not Found'
+    })
+
+
+traceback_template = """<div class='frame'>
+    <div class='short'>{{short}}</div><div class='filename'>{{filename}}</div> &mdash; line {{lineno}}
+    <pre>{{src}}</pre>"""
+
+def HttpDebug500(environ, start_response, exc):
+    exc_type, exc_value, tb = exc
+    start_response('500 Internal Server Error', [])
+    return simple_template(template_base, {
+        'title': '500 Internal Server Error',
+        'list': "\n".join(get_frames(tb)),
+        'exception': "%s: %s" % (exc_type.__name__, exc_value)
+    })
+
+def get_frames(tb):
+    frames = []
+    while tb is not None:
+        if tb.tb_frame.f_locals.get('__traceback_hide__'):
+            tb = tb.tb_next
+            continue
+        filename = tb.tb_frame.f_code.co_filename
+        function = tb.tb_frame.f_code.co_name
+        lineno = tb.tb_lineno - 1
+        module_name = tb.tb_frame.f_globals.get('__name__')
+        short = os.path.join( os.path.basename(os.path.dirname(filename)), os.path.basename(filename) )
+        pre, src, post = read_file(filename, lineno, 11)
+        frames.append(simple_template(traceback_template, {
+            'filename': filename,
+            'short': short,
+            'lineno': str(lineno),
+            'function': function,
+            'src': src.strip()
+        }))
+        tb = tb.tb_next
+    return frames
+
+def read_file(filename, lineno, context_lines):
+    source = []
+    
+    try:
+        f = open(filename)
+        try:
+            source = f.readlines()
+        finally:
+            f.close()
+    except (OSError, IOError):
+        pass
+
+    encoding = 'ascii'
+    for line in source[:2]:
+        # File coding may be specified. Match pattern from PEP-263
+        # (http://www.python.org/dev/peps/pep-0263/)
+        match = re.search(r'coding[:=]\s*([-\w.]+)', line)
+        if match:
+            encoding = match.group(1)
+            break
+    source = [unicode(sline, encoding, 'replace') for sline in source]
+
+    lower_bound = max(0, lineno - context_lines)
+    upper_bound = lineno + context_lines
+
+    pre_context = [line.strip('\n') for line in source[lower_bound:lineno]]
+    context_line = source[lineno].strip('\n')
+    post_context = [line.strip('\n') for line in source[lineno+1:upper_bound]]
+
+    return pre_context, context_line, post_context

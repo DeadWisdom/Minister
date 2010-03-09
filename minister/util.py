@@ -54,11 +54,23 @@ def simple_template(string, context):
     return re.sub('{{(.*?)}}', repl, string)
 
 def print_tb(e):
+    info = error_info(e)
     lines = ["\nError:\n"]
-    lines.extend(traceback.format_tb(sys.exc_traceback)[1:])
-    lines.append("%s: %s" % (e.__class__.__name__, str(e)))
-
+    lines.extend(info['traceback'])
+    lines.append(info['exception'])
+    
     lines.append("\n\nLocals:\n")
+    for k, v in info['locals']:
+        lines.append("\t%s: %s\n" % (k, v))
+
+    print "".join(lines)
+
+def error_info(e):
+    info = {}
+    info['traceback'] = traceback.format_tb(sys.exc_traceback)
+    info['exception'] = "%s: %s" % (e.__class__.__name__, str(e))
+    
+    info['locals'] = []
     tb = sys.exc_info()[2]
     while tb.tb_next:
         tb = tb.tb_next
@@ -68,9 +80,10 @@ def print_tb(e):
             value = "%r" % value
         except:
             value = '<not representable>'
-        lines.append("\t%s: %s\n" % (key,value))
+        info['locals'].append( (key, value) )
 
-    print "".join(lines)
+    return info
+    
 
 def render_error(start_response, environ, error):
     start_response(error, [])

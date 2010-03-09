@@ -36,8 +36,9 @@ class Service(base.Service):
         return "active"
     
     def __call__(self, environ, start_response):
+        asdfsdf
         path = environ['PATH_DELTA']
-        if path == 'admin.html':
+        if path == '':
             return self.main(environ, start_response)
         if path.startswith('services/'):
             environ['PATH_DELTA'] = environ['PATH_DELTA'][len('services/'):]
