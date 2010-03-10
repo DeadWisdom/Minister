@@ -15,7 +15,7 @@ class Manager(Resource):
     path = None
     layout = None
     services = None
-    debug = False
+    debug = True
     
     def init(self):
         print self.services

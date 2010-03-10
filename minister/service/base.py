@@ -23,7 +23,7 @@ class Service(Resource):
     num_processes = 2
     path = None
     requires = ['minister', 'eventlet']
-    sites = None
+    site = None
     type = 'service'
     url = None
 

@@ -6,11 +6,11 @@ template_base = """<html><head>
 <style>
     body {font-family: Helvetica, Arial, sans-serif; color: #666; margin: 30px}
     h1 {font-size: 32px; margin-top: 0px; margin-bottom: 0px}
-    a { color: #AD5561; text-decoration: none }
+    a { color: #499D59; text-decoration: none }
     a:hover { text-decoration: underline }
     .list { font-size: 14px; margin-top: 12px; }
     .list .frame { margin-bottom: 2px }
-    .list .frame pre { margin: 4px 16px 12px; padding: 0; color: #79BD89 }
+    .list .frame pre { margin: 4px 16px 12px; padding: 0; color: #499D59 }
     .list .filename { display: none }
     .list .short { display: inline }
     .list .url { margin: 4px 10px; }
@@ -25,17 +25,25 @@ template_base = """<html><head>
 </div>
 </body></html>"""
 
-url_template = """<div class='url'><a href="/{{url}}">/{{url}}</a></div>"""
+url_template = """<div class='url'><a href="{{site}}/{{url}}">{{site}}/{{url}}</a></div>"""
 
 def HttpDebug404(environ, start_response, manager):
     urls = []
     for resource in manager.layout.resources:
-        urls.append( simple_template(url_template, {'url': resource.url}) )
+        if resource.site:
+            site = "http://" + resource.site
+        else:
+            site = ""
+        urls.append( simple_template(url_template, {'url': resource.url, 'site': site}) )
     
     for resource in manager.services.resources:
         url = resource._service.url
+        if resource._service.site:
+            site = "http://" + resource._service.site
+        else:
+            site = ""
         if not (resource._service.disabled or resource.disabled):
-            urls.append( simple_template(url_template, {'url': url}) )
+            urls.append( simple_template(url_template, {'url': url, 'site': site}) )
     
     start_response('404 Not Found', [])
     return simple_template(template_base, {

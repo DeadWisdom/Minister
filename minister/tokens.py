@@ -114,14 +114,14 @@ class ServiceToken(Resource):
         if url is not None and path.startswith(url):
             return path[len(url):]
     
-    def match_sites(self, hostname):
+    def match_site(self, hostname):
         if not self._service:
             raise RuntimeError("Token not deployed.")
         if self._service.disabled:
             return False
-        if self._service.sites is None:
+        if self._service.site is None:
             return True
-        if hostname in self._service.sites:
+        if hostname in self._service.site:
             return True
     
     def check_source(self):

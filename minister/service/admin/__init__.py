@@ -36,7 +36,6 @@ class Service(base.Service):
         return "active"
     
     def __call__(self, environ, start_response):
-        asdfsdf
         path = environ['PATH_DELTA']
         if path == '':
             return self.main(environ, start_response)

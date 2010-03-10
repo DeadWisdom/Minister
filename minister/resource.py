@@ -25,7 +25,7 @@ class Resource(object):
     
     type = 'resource'
     url = None          # Accepts any url
-    sites = None        # Accepts any site
+    site = None        # Accepts any site
     disabled = False
     _manager = None
     
@@ -82,10 +82,10 @@ class Resource(object):
         if self.url is not None and path.startswith(self.url):
             return path[len(self.url):]
     
-    def match_sites(self, hostname):
-        if self.sites is None:
+    def match_site(self, hostname):
+        if self.site is None:
             return True
-        if hostname in self.sites:
+        if hostname in self.site:
             return True
 
 class Simple(Resource):
@@ -109,7 +109,7 @@ class Layout(Resource):
         for resource in self.resources:
             if resource.disabled:
                 continue
-            if not resource.match_sites(hostname):
+            if not resource.match_site(hostname):
                 continue
             delta = resource.match_path(requested_path)
             if delta is not None:

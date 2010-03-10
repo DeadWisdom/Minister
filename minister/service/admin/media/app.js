@@ -1,3 +1,10 @@
+Service = new Tea.Class({
+    options: {
+        name: 'Unnamed Service',
+        
+    }
+})
+
 Icon = Tea.Element.subclass({
     options: {
         cls: 'icon',
@@ -16,28 +23,50 @@ Icon = Tea.Element.subclass({
             "mia":          "red"
         }
     },
+    preload : function(type)
+    {
+        if (Icon.preloaded[type])
+            return;
+        
+        Icon.preloaded[type] = true;
+        
+        for(var status in this.colors)
+        {
+            var img = new Image();
+            img.src = App.root + 'static/icons/' + type + '-' + this.colors[status] + '.png';
+            console.log(img.src);
+        }
+    },
     setValue : function(status, type)
     {
-        this._img = App.root + 'static/icons/' + type + '-' + this.options.colors[status] + '.png';
+        if (type)
+            this.preload(type);
+        
+        this._img = App.root + 'static/icons/' + type + '-' + this.colors[status] + '.png';
         if (this.source)
             this.source.css('background-image', "url(" + this._img + ")");
     },
     onRender : function()
-    {
+    {   
         if (this._img)
             this.source.css('background-image', this._img);
         else
-            this.setValue(this.options.status, this.options.type);
+            this.setValue(this.status, this.type);
     }
 });
+Icon.preloaded = {};
 
 ServiceItem = Tea.Container.subclass({
     options: {
         cls: 'service item',
         value: null
     },
-    onInit : function()
+    __init__ : function(options)
     {
+        this.__super__(options);
+        
+        this.value.bind('update', Tea.method(this.refresh, this));
+        
         this.icon = new Icon();
         this.name = new Tea.Element({cls: 'name'});
         this.url =  new Tea.Element({cls: 'url'});
@@ -50,10 +79,12 @@ ServiceItem = Tea.Container.subclass({
     },
     onRender : function()
     {
-        this.setValue(this.options.value);
+        this.refresh();
     },
-    setValue : function(v)
+    refresh : function()
     {
+        var v = this.value;
+        
         this.source.attr('class', 'service item ' + v.status + ' ' + v.type);
         
         this.icon.setValue(v.status, v.type);
@@ -64,8 +95,9 @@ ServiceItem = Tea.Container.subclass({
         else
             this.info.setHTML(v.status);
     },
-    setFail : function(v)
+    setFail : function()
     {
+        this.icon.setValue('unknown', this.value.type);
         this.source.attr('class', 'service item unknown');
         this.info.setHTML('unkown');
     }
@@ -96,24 +128,51 @@ var App = new Tea.Application({
     {
         this.stack.render().appendTo('#main');
         
-        this.session.add_resource('service', {root: this.root + "services/"});
-        
-        this.services = {};
         this.service_panel = new Tea.Panel({title: 'Services'});
+        this.service_panel.append( this.loading = new LoadingElement() );
         this.stack.push( this.service_panel );
         
-        this.service_panel.append( this.loading = new LoadingElement() );
+        this.services = new Tea.Resource({
+            url: this.root + "services",
+            key: 'path'
+        });
         
-        this.load();
+        this.refresh = Tea.latent(1000, this._refresh, this);
+        
+        this.services.bind('update', Tea.method(this.update, this));
+        this.services.bind('error', Tea.method(this.fail, this));
+        this.services.query();
     },
     
-    load : function()
+    update : function(services)
     {
-        $.ajax({
-            url: App.root + 'services/*.json',
-            success: Tea.method(this.onLoad, this),
-            dataType: "json",
+        this.service_panel.remove( this.loading );
+        
+        var list = this.services.popNew();
+        for(var i = 0; i < list.length; i++)
+        {
+            var item = new ServiceItem({
+                value: list[i]
+            });
+            this.service_panel.append(item);
+        }
+        
+        this.refresh();
+    },
+    
+    _refresh : function()
+    {
+        this.services.query();
+    },
+    
+    fail : function()
+    {
+        jQuery.each(this.service_panel.items, function()
+        {
+            this.setFail();
         });
+                
+        this.refresh();
     },
     
     onLoad : function(services, status_code, request)
@@ -147,10 +206,6 @@ var App = new Tea.Application({
     
     onFail : function()
     {
-        for(var path in this.services)
-        {
-            this.services[path].setFail();
-        }
     },
     
     setService : function(value)
