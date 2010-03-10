@@ -34,7 +34,6 @@ Icon = Tea.Element.subclass({
         {
             var img = new Image();
             img.src = App.root + 'static/icons/' + type + '-' + this.colors[status] + '.png';
-            console.log(img.src);
         }
     },
     setValue : function(status, type)
