@@ -1,6 +1,3 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import os, minister
 minister.run()
-
-#manager = minister.Manager(path=os.path.join(__file__, '..', 'tests', 'repo'), services=[{'type': 'admin', 'path': '@admin'}])
-#manager.serve(('', 8000))
