@@ -31,7 +31,7 @@ class ServiceToken(Resource):
         self.properties['path'] = properties.get('path')
         
         self._service = None
-        self._thread = None
+        self._threads = []
         self._status = "building"
         self._extra = ""
         self._config = None
@@ -68,7 +68,7 @@ class ServiceToken(Resource):
     def deploy(self):
         if self._service:
             return
-        self._thread = api.spawn(self._deploy)
+        self._threads.append( api.spawn(self._deploy) )
         self.status = 'deploying'
     
     def _deploy(self):
@@ -98,10 +98,13 @@ class ServiceToken(Resource):
         if self._service.disabled:
             self.status = 'disabled'
         else:
-            print "Start:", self.path
             self._service.start()
         
-        self.monitor()
+        self._threads.append( api.spawn(self._check_status_loop) )
+        if (self._service.health):
+            #print "Health Checker engaged [timeout: %r, interval: %r]" % (self._service.health.get('interval', 30), self._service.health.get('timeout', 10))
+            self._threads.append( api.spawn(self._check_health_loop, self._service.health.get('interval', 30)) )
+        self._threads.remove( api.getcurrent() )
     
     def match_path(self, path):
         if not self._service:
@@ -159,9 +162,11 @@ class ServiceToken(Resource):
         self.status = 'disabled'
     
     def _withdraw(self):
-        if self._thread and self._thread is not api.getcurrent():
-            api.kill(self._thread)
-            self._thread = None
+        if self._threads:
+            for g in self._threads:
+                if g is not api.getcurrent():
+                    self._threads.remove(g)
+                    api.kill(g)
         
         if self._service:
             self._service.stop()
@@ -172,12 +177,24 @@ class ServiceToken(Resource):
         self._withdraw()
         self.deploy()
     
-    def monitor(self, interval=0.5):
+    def _check_status_loop(self, interval=0.5):
         while True:
-            if self._config_file and self._config_file.is_stale():
-                return self.redeploy()
-            self.status = self._service.check_status()
+            try:
+                if self._config_file and self._config_file.is_stale():
+                    return self.redeploy()
+                self.status = self._service.check_status()
+            except Exception, e:
+                from util import print_tb
             api.sleep(interval)
+    
+    def _check_health_loop(self, interval=30):
+        while True:
+            api.sleep(interval)
+            try:
+                self._service.check_health()
+            except Exception, e:
+                from util import print_tb
+                print_tb(e)
     
     def info(self):
         if (self._service):

@@ -5,5 +5,10 @@
     "url": "a/",
     "layout": [
         {"type": "simple", "url": "simple", "content": "Simple Resource A"}
-    ]
+    ],
+    "health": {
+        "url": "health",
+        "timeout": 2,
+        "interval": 2
+    }
 }

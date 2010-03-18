@@ -12,35 +12,57 @@ class Static(Resource):
     index = ('index.html',)
     exclude = []
     volatile = False            # If True, everything is out of date for modified checking.
+    _handlers = {}              # Map extensions to handler functions.
     
     def __call__(self, environ, start_response):
         """Respond to a request when called in the usual WSGI way."""
         if environ['REQUEST_METHOD'] not in self._allowed:
-            return Http405(environ, start_response, self.__allowed)
+            return Http405(environ, start_response, self._allowed)
         
         requested_path = environ.get('PATH_DELTA', environ.get('PATH_INFO', ''))
-        path = requested_path.split("/")
-        root = os.path.abspath(os.path.join( environ.get('DEPLOY_PATH', ''), self.root ))
-        path = os.path.abspath(os.path.join( root, *path ))
-        if not path.startswith(root):
+        path = self.find_real_path(requested_path)
+        if not path:
             return Http404(environ, start_response)
         
+        for e in self.exclude:
+            if path.endswith('/%s' % e):
+                return Http404(environ, start_response)
+                
         if os.path.isdir(path):
-            if requested_path and requested_path[-1] == '/':
+            if requested_path and requested_path.endswith('/'):
                 path = self.find_index(path)
                 if path is None:
                     return self.dir_listing(environ, start_response, path)
             else:
                 return Http301(environ, start_response, self.corrected_dir_uri(environ))
         
-        for e in self.exclude:
-            if path.endswith('/%s' % e):
-                return Http404(environ, start_response)
+        try:
+            ext = path.rsplit('.', 1)[1]
+        except:
+            pass
+        else:
+            if ext in self.handlers:
+                response = self.handlers[ext](environ, start_response, path)
+                if response:
+                    return response
         
         return self.serve(environ, start_response, path)
+        
+    def find_real_path(self, path):
+        requested_path = environ.get('PATH_DELTA', environ.get('PATH_INFO', ''))
+        path = requested_path.split("/")
+        root = os.path.abspath(os.path.join( environ.get('SERVICE_PATH', ''), self.root ))
+        path = os.path.join( root, *path )
+        if not path.startswith(root):
+            return None
+        return path
     
     def serve(self, environ, start_response, path):
         """Serve the file at path."""
+        
+        if not os.path.exists(path):
+            return Http404(environ, start_response)
+            
         try:
             if self.volatile:
                 modified = time.time()
@@ -71,6 +93,9 @@ class Static(Resource):
                 return ('',)
         except (IOError, OSError), e:
             return Http404(environ, start_response)
+    
+    def set_handler(self, ext, func):
+        self._handlers[ext] = func
     
     def yield_file(self, file):
         """Yield a file by every *self.read_block_size* bytes."""

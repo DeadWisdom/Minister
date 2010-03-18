@@ -1,0 +1,68 @@
+== About ==
+Minister is a web-server that matches the needs of modern web development. 
+Rarely do we have simple html files sitting in directories any more.  Today,
+applications are complex and dynamic yet our servers still adhere to old
+expectations and assumptions.
+
+Minister has four goals:
+ * Make application deployment extremely simple.
+   We achieve this by treating applications as "services", each can be
+   configured easily with a deploy.json file found in the base directory of
+   the app.  Apps can also be specified merely by pointing to a resource such
+   as a url of a tarball, a git or hg repository, or an rsyncable directory.
+ * The server should be monitoring your apps.
+   Minister will monitor your application processes, if one goes down it will
+   restart it.  Other monitoring is planned for the future like cpu usage,
+   health monitoring, email alerts when things get out of whack, and even
+   dynamically spinning up new processes to handle load.
+ * Separate applications into distinct environments.
+   Because applications are each run in their own process (and sometimes 
+   multiple processes), they can exist in their own runtime environments. This
+   allows Ruby programs to work flawlessly next to PHP, or Python interpreters
+   in separate virtualenvs.
+ * Provide a web-resource for the server itself.
+   The Minister Administration service allows the user to see what services 
+   are currently running, and what their state is.  You will also be able to
+   bring them up and down, modify details of their configuration right in the
+   admin.  It will also provides a REST interface for doing the same.
+   Note: This feature is not yet complete, you can see the status of the
+   services, but not interact with them yet.
+
+
+== Architecture ==
+The central piece of the server is the Manager() from manager.py. The manager
+gathers Token() objects which in turn deal with Service() objects. The service
+objects spawn off processes that actually will actually run the application
+code.  The manager then serves front-facing, and then proxies requests to the
+various services.  Since each service can spin off multiple processes that
+listen to the same socket, automatic load-balancing is done.
+
+Each service can be configured in two ways.  Firstly, an application should
+provide a config called "deploy.json" in the root of the application
+directory.  This file can provide a "layout" which defining further proxying,
+static server directories, or any other resource.  It will always specify 
+a service type, for instance "php", "django", or "ruby".  And properties that
+it defines are super-imposed onto the defaults of the service type.  Further
+in the "config.json" of the Manager, further properties can be set on the
+entry for that service.
+
+ * A Manager() from manager.py is created.  
+ * It loads its configuration from the
+   repository's "config.json", or creates a new one.  The config tells the
+   manager how to configure itself, what services to run, and what assets to
+   serve statically.  By default the only service is the Admin service, which
+   provides a web-based interface.
+ * 
+
+Most of the objects in Minister are based on the Resource() class, which is
+in resource.py.  Resources are like small WSGI apps, but they can always be
+simplified via their "simple()" function.  This simple form is just a 
+dictionary which could be easily translated to a JSON object.  The object
+can then be recreated with Resource.create(simple_dict).
+
+Manager from manager.py loads, the manager then loads its Services, from service.
+It has a default Admin service, and then it gets the rest by scanning for them in the repo/services directory
+Each of those can have a deploy.json, which needs to be renamed to "service.json"
+And maybe changed to yaml.
+But those describe what service type they are, and the attributes are used to create the actual Service object.
+The manager though, deals with "Tokens" which then point to Services.  But the tokens can do things like check to see if the service needs to be refreshed, redeployed, etc.

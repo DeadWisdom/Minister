@@ -26,6 +26,7 @@ class Service(Resource):
     site = None
     type = 'service'
     url = None
+    health = None
 
     ### Class Methods #####################
     @classmethod
@@ -45,8 +46,6 @@ class Service(Resource):
     def init(self):
         if not getattr(self, '_socket', None):
             from minister.proxy import Proxy
-        
-            self._debug = False
         
             self._socket = socket.socket()
             self._socket.bind(tuple(self.address))
@@ -161,6 +160,23 @@ class Service(Resource):
         elif active < total:
             return 'struggling', '%d of %d processes' % (active, total)
 
+    def check_health(self):
+        return True
+        
+        ## This isn't working yet.
+        from eventlet.green import httplib
+        try:
+            timeout = self.health.get('timeout', 10)
+            conn = httplib.HTTPConnection(self.address[0], self.address[1], True, timeout)
+            conn.request("get", self.health.get('url', ''))
+            status = conn.getresponse().status
+        except Exception, e:
+            status = None
+        if status != 200:
+            for p in self._processes:
+                p.kill()
+                p.run()
+
 class Process(object):
     def __init__(self, path=None, executable=sys.executable, args=[], environ={}):
         self.pid = None
@@ -202,13 +218,14 @@ class Process(object):
             return (time.clock() - runs[-3][1]) < leeway
     
     def kill(self):
-        self.event('kill')
-        try:
-            os.kill(self.pid, signal.SIGHUP)
-            os.waitpid(self.pid, 0)
-            self.pid = None
-        except OSError:
-            pass
+        if self.pid:
+            self.event('kill')
+            try:
+                os.kill(self.pid, signal.SIGHUP)
+                os.waitpid(self.pid, 0)
+                self.pid = None
+            except OSError:
+                pass
     
     def _exec(self):
         try:

@@ -15,11 +15,9 @@ class Manager(Resource):
     path = None
     layout = None
     services = None
-    debug = True
+    debug = False
     
     def init(self):
-        print self.services
-        
         self.path = os.path.abspath(self.path)
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
