@@ -237,7 +237,7 @@ class Process(object):
         try:
             os.chdir(self.path)
             args = [self.executable] + list(self.args)
-            os.execve(self.executable, args, self.environ)
+            os.execvpe(self.executable, args, self.environ)
         except OSError, e:
             print "%s:" % e, " ".join(args)
             os._exit(0)
