@@ -37,13 +37,17 @@ def HttpDebug404(environ, start_response, manager):
         urls.append( simple_template(url_template, {'url': resource.url, 'site': site}) )
     
     for resource in manager.services.resources:
+        if resource.status == "failed":
+            continue
+        if resource._service.disabled or resource.disabled:
+            continue
+            
         url = resource._service.url
         if resource._service.site not in ('*', None):
             site = "http://" + resource._service.site
         else:
             site = ""
-        if not (resource._service.disabled or resource.disabled):
-            urls.append( simple_template(url_template, {'url': url, 'site': site}) )
+        urls.append( simple_template(url_template, {'url': url, 'site': site}) )
     
     start_response('404 Not Found', [])
     return simple_template(template_base, {
