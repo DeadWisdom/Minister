@@ -37,11 +37,11 @@ class Service(base.Service):
         return "active"
     
     def __call__(self, environ, start_response):
-        path = environ['PATH_DELTA']
+        path = environ['SCRIPT_NAME']
         if path == '':
             return self.main(environ, start_response)
         if path.startswith('services/'):
-            environ['PATH_DELTA'] = environ['PATH_DELTA'][len('services/'):]
+            environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'][len('services/'):]
             return self.services(environ, start_response)
         return self.layout(environ, start_response)
     
@@ -49,7 +49,7 @@ class Service(base.Service):
         return HttpResponse(environ, start_response, simple_template(self._index.read(), {'url': '/%s' % self.url}))
     
     def services(self, environ, start_response):
-        path = environ['PATH_DELTA']
+        path = environ['SCRIPT_NAME']
         if path == '*.json':
             root = os.path.abspath( self._manager.path )
             services = []

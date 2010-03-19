@@ -20,7 +20,6 @@ class Service(fastcgi.Service):
     index = ('index.php', 'index.html')
     
     def init(self):
-        super(Service, self).init()
         if (self.address[1] == 0):
             self.address = self.find_port()
         if not self.args:
@@ -30,29 +29,23 @@ class Service(fastcgi.Service):
             for pair in self.options.items():
                 self.args.extend(['-d', '%s=%s' % pair])
         
-        # Falls back to static.
+        super(Service, self).init()
+        
         self._static = Static(index=self.index, root=self.path)
+        self._static.set_handler('php', self._handle)
     
     def _proxy(self, environ, start_response):
-        path = environ.get('PATH_DELTA', environ.get('PATH_INFO', ''))
-        info = None
+        path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
         if '.php/' in path:
             path, info = path.split('.php/', 1)
-            path = path + '.php'
-            info = '/' + info
+            environ['SCRIPT_NAME'] = path + '.php'
+            environ["PATH_INFO"] = '/' + info
         
-        if path.endswith('.php'):
-            path = self._static.find_real_path(self.path, path)
-            if path is None:
-                return Http404(environ, start_response)
-            if not os.path.isdir(path):
-                environ['SCRIPT_NAME'] = path
-                environ['PATH_INFO'] = None
-                return self._handle(environ, start_response)
-                
         return self._static(environ, start_response)
         
-    def _handle(self, environ, start_response):
+    def _handle(self, environ, start_response, path):
+        environ['SCRIPT_NAME'] = path
+        
         if 'REQUEST_URI' not in environ:
             # PHP likes to have this variable
             request_uri = [
@@ -63,10 +56,10 @@ class Service(fastcgi.Service):
                 request_uri.extend(['?', environ['QUERY_STRING']])
             environ['REQUEST_URI'] = "".join(request_uri)
         
-        if '/' in environ['SCRIPT_NAME']:
-            environ['SCRIPT_FILENAME'] = environ['SCRIPT_NAME'].rsplit('/', 1)[1]
+        if '/' in path:
+            environ['SCRIPT_FILENAME'] = path.rsplit('/', 1)[1]
         else:
-            environ['SCRIPT_FILENAME'] = environ['SCRIPT_NAME']
+            environ['SCRIPT_FILENAME'] = path
         
         return self._resource(environ, start_response)
     
@@ -81,3 +74,11 @@ class Service(fastcgi.Service):
             else:
                 s.close()
                 return host, port
+    
+    def find_index(self, path):
+        """Find an index file in the directory specified at path."""
+        for i in self.index:
+            candidate = os.path.join(path, i)
+            if os.path.isfile(candidate):
+                return candidate
+        return None

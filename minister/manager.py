@@ -76,7 +76,7 @@ class Manager(Resource):
             self.close()
         
     def __call__(self, environ, start_response):
-        environ['PATH_DELTA'] = environ['PATH_INFO'][1:]
+        environ['SCRIPT_NAME'] = environ['PATH_INFO'][1:]
         
         try:
             response = self.layout(environ, start_response)

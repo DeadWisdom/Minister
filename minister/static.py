@@ -19,7 +19,7 @@ class Static(Resource):
         if environ['REQUEST_METHOD'] not in self._allowed:
             return Http405(environ, start_response, self._allowed)
         
-        requested_path = environ.get('PATH_DELTA', environ.get('PATH_INFO', ''))
+        requested_path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
         path = self.find_real_path(environ.get('SERVICE_PATH', ''), requested_path)
         if not path:
             return Http404(environ, start_response)
@@ -29,11 +29,12 @@ class Static(Resource):
                 return Http404(environ, start_response)
                 
         if os.path.isdir(path):
-            if requested_path and requested_path.endswith('/'):
+            if requested_path == '' or requested_path.endswith('/'):
                 path = self.find_index(path)
                 if path is None:
                     return self.dir_listing(environ, start_response, path)
             else:
+                print "Correcting:", requested_path, path
                 return Http301(environ, start_response, self.corrected_dir_uri(environ))
         
         try:

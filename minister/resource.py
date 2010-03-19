@@ -110,7 +110,7 @@ class Layout(Resource):
     resources = []
     
     def __call__(self, environ, start_response):
-        requested_path = environ.get('PATH_DELTA', environ.get('PATH_INFO', ''))
+        requested_path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
         hostname, _, _ = environ.get('HTTP_HOST').partition(":")
         for resource in self.resources:
             if resource.disabled:
@@ -119,9 +119,9 @@ class Layout(Resource):
                 continue
             delta = resource.match_path(requested_path)
             if delta is not None:
-                environ['PATH_DELTA'] = delta
+                environ['SCRIPT_NAME'] = delta
                 response = resource(environ, start_response)
-                environ['PATH_DETLA'] = requested_path
+                environ['SCRIPT_NAME'] = requested_path
                 return response
     
     def add(self, resoures):
