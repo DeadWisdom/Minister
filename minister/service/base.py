@@ -24,8 +24,8 @@ class Service(Resource):
     path = None
     requires = ['minister', 'eventlet']
     site = None
-    type = 'service'
     url = None
+    type = 'service'
     health = None
 
     ### Class Methods #####################
@@ -62,8 +62,9 @@ class Service(Resource):
         Return the simplified properties of this instance so that it can be JSONed.
         """
         dct = dict((k, v) for k, v in self.__dict__.items() if not k.startswith('_'))
-        dct['_socket'] = self._socket.fileno()
-        if self.layout:
+        if getattr(self, '_socket', None):
+            dct['_socket'] = self._socket.fileno()
+        if getattr(self, 'layout', None):
             dct['layout'] = self.layout.simple()
         return dct
     
@@ -76,9 +77,13 @@ class Service(Resource):
         environ.update({
             'SERVICE_URL': str(self.url),
             'SERVICE_PATH': str(self.path),
-            'SERVICE_SOCKET': str(self._socket.fileno()),
             'SERVICE_JSON': json.dumps(self.simple()),
         })
+        
+        # Add our socket.
+        if hasattr(self, '_socket'):
+            environ['SERVICE_SOCKET'] = str(self._socket.fileno())
+        
         # Place our cwd in the Python Path:
         pypath = environ.get('PYTHONPATH')
         if pypath:
@@ -103,8 +108,10 @@ class Service(Resource):
     
     def start(self):
         self.stop()
+            
         if self.before_deploy:
             self.shell(self.before_deploy)
+        
         for i in xrange(self.num_processes):
             try:
                 process = Process(self.path, self.executable, self.args, self.get_environ())
@@ -130,14 +137,15 @@ class Service(Resource):
         return content
     
     def stop(self):
-        for process in self._processes:
-            process.kill()
+        if hasattr(self, '_processes'):
+            for process in self._processes:
+                process.kill()
         self._processes = []
     
     def check_status(self):
         if self.disabled:
             return "disabled"
-        
+            
         active = 0
         for process in self._processes:
             done, status = process.check()
@@ -151,14 +159,17 @@ class Service(Resource):
                 process.run()
                 active += .5
         
-        total = len(self._processes)
+        total = self.num_processes
+        plural = 'es'
+        if total == 1:
+            plural = ''
         
         if active == 0:
-            return 'failed', '0 of %d processes' % total
+            return 'failed', '0 of %d process%s' % (total, plural)
         elif active == total:
-            return 'active', '%d of %d processes' % (active, total)
+            return 'active', '%d of %d process%s' % (active, total, plural)
         elif active < total:
-            return 'struggling', '%d of %d processes' % (active, total)
+            return 'struggling', '%d of %d process%s' % (active, total, plural)
 
     def check_health(self):
         return True
@@ -190,12 +201,7 @@ class Process(object):
         self.event('run')
         self.pid = os.fork()
         if not self.pid:
-            try:
-                self._exec()
-            except Exception, e:
-                print "Error starting process:"
-                print_tb(e)
-                sys._exit(0)
+            self._exec()
     
     def event(self, name):
         self.events.append((name, time.clock()))
@@ -232,6 +238,9 @@ class Process(object):
             os.chdir(self.path)
             args = [self.executable] + list(self.args)
             os.execve(self.executable, args, self.environ)
+        except OSError, e:
+            print "%s:" % e, " ".join(args)
+            os._exit(0)
         except Exception, e:
             print "Process start failed."
             print_tb(e)

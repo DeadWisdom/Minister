@@ -2,7 +2,8 @@ import os, sys
 import base
 
 from eventlet.green import socket
-from minister.fastcgi import FCGI
+from minister.fastcgi import FastCGI
+from minister.resource import Resource
 
 class Service(base.Service):
     ### Properties #########################
@@ -15,7 +16,7 @@ class Service(base.Service):
     
     ### Instance Methods ###################
     def init(self):
-        self._resource = FCGI(self.address, self.filter)
+        self._resource = FastCGI(address=self.address, filter=self.filter)
         self.layout = Resource.create(self.layout)
     
     def _proxy(self, environ, start_response):

@@ -1,6 +1,6 @@
 {
     "type": "wsgi",
-    "name": "Server B",
+    "name": "Service B",
     "disabled": true,
     "url": "b/"
 }

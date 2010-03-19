@@ -38,7 +38,7 @@ def HttpDebug404(environ, start_response, manager):
     
     for resource in manager.services.resources:
         url = resource._service.url
-        if resource._service.site:
+        if resource._service.site not in ('*', None):
             site = "http://" + resource._service.site
         else:
             site = ""

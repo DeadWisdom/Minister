@@ -24,8 +24,8 @@ class Resource(object):
     __metaclass__ = ResourceMeta
     
     type = 'resource'
-    url = None          # Accepts any url
-    site = None        # Accepts any site
+    url = None          # Accepts no url
+    site = '*'          # Accepts any site
     disabled = False
     _manager = None
     
@@ -78,13 +78,19 @@ class Resource(object):
     
     def match_path(self, path):
         if self.url is None:
+            return False
+        if self.url is '*':
             return path
         if self.url is not None and path.startswith(self.url):
             return path[len(self.url):]
     
     def match_site(self, hostname):
         if self.site is None:
+            return False
+        if self.site is '*':
             return True
+        if isinstance(self.site, basestring):
+            return hostname == self.site
         if hostname in self.site:
             return True
 

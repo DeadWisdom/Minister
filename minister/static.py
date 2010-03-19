@@ -20,7 +20,7 @@ class Static(Resource):
             return Http405(environ, start_response, self._allowed)
         
         requested_path = environ.get('PATH_DELTA', environ.get('PATH_INFO', ''))
-        path = self.find_real_path(requested_path)
+        path = self.find_real_path(environ.get('SERVICE_PATH', ''), requested_path)
         if not path:
             return Http404(environ, start_response)
         
@@ -41,17 +41,16 @@ class Static(Resource):
         except:
             pass
         else:
-            if ext in self.handlers:
-                response = self.handlers[ext](environ, start_response, path)
+            if ext in self._handlers:
+                response = self._handlers[ext](environ, start_response, path)
                 if response:
                     return response
         
         return self.serve(environ, start_response, path)
         
-    def find_real_path(self, path):
-        requested_path = environ.get('PATH_DELTA', environ.get('PATH_INFO', ''))
-        path = requested_path.split("/")
-        root = os.path.abspath(os.path.join( environ.get('SERVICE_PATH', ''), self.root ))
+    def find_real_path(self, root, path):
+        path = path.split("/")
+        root = os.path.abspath(os.path.join( root, self.root ))
         path = os.path.join( root, *path )
         if not path.startswith(root):
             return None

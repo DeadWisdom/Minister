@@ -14,6 +14,7 @@ MEDIA_PATH = os.path.abspath(
 class Service(base.Service):
     type = "admin"
     url = 'minister/'
+    site = '*'
     layout = Layout(resources=[
         Static(url='static/', root=MEDIA_PATH, exclude=['index.html'], volatile=True),
     ])

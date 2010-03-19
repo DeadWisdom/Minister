@@ -34,7 +34,7 @@ from eventlet import api
 import struct
 import errno
 
-__all__ = ['FCGI']
+__all__ = ['FastCGI']
 
 # Constants from the spec.
 FCGI_LISTENSOCK_FILENO = 0
@@ -257,7 +257,7 @@ class Record(object):
             self._sendall(sock, '\x00'*self.paddingLength)
 
 from resource import Resource
-class FCGI(Resource):
+class FastCGI(Resource):
     address = None
     filter = True
     

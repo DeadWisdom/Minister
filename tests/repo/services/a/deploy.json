@@ -1,6 +1,6 @@
 {
     "type": "wsgi",
-    "name": "Server A",
+    "name": "Service A",
     "app": "serve.app",
     "url": "a/",
     "layout": [

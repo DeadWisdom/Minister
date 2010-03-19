@@ -42,7 +42,7 @@ class Service(fastcgi.Service):
             info = '/' + info
         
         if path.endswith('.php'):
-            path = self._static.find_real_path(path)
+            path = self._static.find_real_path(self.path, path)
             if path is None:
                 return Http404(environ, start_response)
             if not os.path.isdir(path):
