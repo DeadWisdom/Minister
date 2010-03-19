@@ -48,7 +48,7 @@ class Service(fastcgi.Service):
             if not os.path.isdir(path):
                 environ['SCRIPT_NAME'] = path
                 environ['PATH_INFO'] = None
-                return self._handle(self, environ, start_response)
+                return self._handle(environ, start_response)
                 
         return self._static(environ, start_response)
         
