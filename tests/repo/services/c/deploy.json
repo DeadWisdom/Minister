@@ -1,5 +1,6 @@
 {
    "type": "php",
    "name": "Service C",
+   "site": "*",
    "url": "c/"
 }
