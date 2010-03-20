@@ -2,7 +2,7 @@
 PHP Service.
 """
 
-import os, sys
+import os, sys, time
 import fastcgi
 
 from eventlet.green import socket
