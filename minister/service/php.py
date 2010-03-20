@@ -61,7 +61,11 @@ class Service(fastcgi.Service):
         else:
             environ['SCRIPT_FILENAME'] = path
         
-        return self._resource(environ, start_response)
+        s = time.time()
+        r = self._resource(environ, start_response)
+        e = time.time()
+        print "Request took:", e - s
+        return r
     
     def find_port(self):
         host = self.address[0]
