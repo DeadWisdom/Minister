@@ -1,0 +1,29 @@
+= TODO =
+    Fix PHP Bugs
+    Process Refactor - (rebase onto eventlet.green.subprocess for everything)
+    Virtual Env System - (yay pip)
+    Source Fixes - (make sure everything works properly)
+    Task System - (like cron, but you know better)
+ -- Use As My Actual Webserver Milestone --
+    LogPath - (fix the logs to take a logpath instead of path+name)
+    Demonization - (also set user / group for root)
+    Digest Auth
+    Ruby Service - (gem manager?)
+    Project Website / Mailing List
+ -- Beta Release Milestone --
+    Tests
+    Better Admin - (manage services, logs, etc)
+    Profile System - (profile services, but also a profile website like pypy)
+    Plugin System
+    Memcachedb Service
+    Redis System
+    User Documentation
+ -- Version 0.9 Release --
+    Bugfixes / Etc.
+    Project Website Redux
+    Propaganda
+ -- Version 1.0 Release --
+ 
+ 
+= DONE =
+    Fix README
