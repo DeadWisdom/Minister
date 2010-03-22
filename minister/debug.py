@@ -37,7 +37,7 @@ def HttpDebug404(environ, start_response, manager):
         urls.append( simple_template(url_template, {'url': resource.url, 'site': site}) )
     
     for resource in manager.services.resources:
-        if resource.status == "failed":
+        if resource.status not in ("active", "struggling"):
             continue
         if resource._service.disabled or resource.disabled:
             continue

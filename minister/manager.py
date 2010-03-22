@@ -87,7 +87,11 @@ class Manager(Resource):
             self._socket.bind(address)
             self._socket.listen(500)
             
-            self._log.info("manager serving at %s:%s", *address)
+            if (address[0] == ''):
+                address = 'localhost', address[1]
+            
+            print "Manager servering on http://%s:%s" % address
+            self._log.info("manager serving on http://%s:%s", *address)
             wsgi.server(self._socket, self, log=FileLikeLogger('minister'))
         finally:
             self.close()
