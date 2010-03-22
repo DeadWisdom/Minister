@@ -15,7 +15,7 @@ class Manager(Resource):
     path = None
     layout = None
     services = None
-    debug = True
+    debug = False
     
     log_level = "DEBUG"
     log_count = 4
@@ -181,6 +181,11 @@ def run():
                         action="store_true", dest="verbose",
                         help="Output logging info to stdout.", 
                         default=False)
+                        
+    parser.add_option("-d", "--debug", 
+                        action="store_true", dest="debug",
+                        help="Run in debug mode.", 
+                        default=False)
     
     options, args = parser.parse_args()
     if len(args) > 1:
@@ -215,6 +220,9 @@ def run():
         config['log_echo'] = True
     else:
         config['log_echo'] = "WARNING"
+    
+    if options.debug:
+        config['debug'] = True
     
     manager = Manager(**config)
     atexit.register(manager.close)
