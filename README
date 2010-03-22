@@ -31,7 +31,7 @@ Minister has four goals:
 
 == Brief Architecture ==
 Minister starts up by running the function "run()" in manager.py, which sets
-up the optparser and creates a Manager() instance, and calls its "serve()"
+up the optparser, creates a Manager() instance, and calls its "serve()"
 method.  Which has the manager gather and account for services, and then start
 its front-end listener on port 80, if run as root, or 8000 otherwise.
 
