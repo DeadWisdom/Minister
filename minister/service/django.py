@@ -13,17 +13,15 @@ class Service(base.Service):
         env['DJANGO_SETTINGS_MODULE'] = self.settings
         return env
 
-    def serve(self):
-        from eventlet import wsgi, api
-        from django.core.handlers.wsgi import WSGIHandler
-        from django.core.servers.basehttp import AdminMediaHandler
-        
-        app = WSGIHandler()
-        app = AdminMediaHandler(app)
-    
-        wsgi.server(self._socket, app, log=open(os.devnull, 'w'))
 
 if __name__ == '__main__':
-    sys.path.insert(0, os.environ['SERVICE_PATH'])
-    service = Service.rebuild()
-    service.serve()
+    settings = Service.setup_backend()
+    
+    from eventlet import wsgi, api
+    from django.core.handlers.wsgi import WSGIHandler
+    from django.core.servers.basehttp import AdminMediaHandler
+    
+    app = WSGIHandler()
+    app = AdminMediaHandler(app)
+
+    wsgi.server(settings['socket'], app, log=settings['log'])

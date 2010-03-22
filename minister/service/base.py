@@ -5,7 +5,7 @@ from eventlet.green import socket
 try:
     from minister.resource import Resource
     from minister.proxy import Proxy
-    from minister.util import json, fix_unicode_keys
+    from minister.util import json, fix_unicode_keys, get_logger, FileLikeLogger
 except ImportError:
     print os.environ
     raise RuntimeError("Unable to find minister in our environment.")
@@ -39,17 +39,27 @@ class Service(Resource):
 
     ### Class Methods #####################
     @classmethod
-    def rebuild(cls, dct=None):
+    def setup_backend(cls, dct=None):
         if dct is None:
             dct = fix_unicode_keys( json.loads(os.environ['SERVICE_JSON']) )
         
-        instance = Resource.create(dct)
-        
         if '_socket' in dct:
-            fd = dct.pop('_socket')
-            instance._socket = socket.fromfd( fd, socket.AF_INET, socket.SOCK_STREAM )
+            dct['socket'] = socket.fromfd( dct['_socket'], socket.AF_INET, socket.SOCK_STREAM )
         
-        return instance
+        if 'SERVICE_MANAGER_PATH' in os.environ:
+            name = os.path.basename(os.path.abspath(dct['path']))
+            dct['logger'] = get_logger(path=os.environ['SERVICE_MANAGER_PATH'],
+                                       name=name,
+                                       level=dct.get('log_level', cls.log_level),
+                                       max_bytes=dct.get('log_max_bytes', cls.log_max_bytes),
+                                       count=dct.get('log_count', cls.log_count),
+                                       format=dct.get('log_format', cls.log_format),
+                                       echo=dct.get('log_echo', cls.log_echo))
+            dct['log'] = FileLikeLogger(name)
+        
+        sys.path.insert(0, dct['path'])
+        
+        return dct
     
     ### Instance Methods ###################
     def init(self):
@@ -86,6 +96,7 @@ class Service(Resource):
             'SERVICE_URL': str(self.url),
             'SERVICE_PATH': str(self.path),
             'SERVICE_JSON': json.dumps(self.simple()),
+            'SERVICE_MANAGER_PATH': self._manager.path,
         })
         
         # Add our socket.
