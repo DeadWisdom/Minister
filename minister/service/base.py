@@ -1,10 +1,11 @@
-import os, sys, signal, errno, time
+import os, sys, signal, errno, time, logging
 
 from eventlet.green import socket
 
 try:
     from minister.resource import Resource
-    from minister.util import json, print_tb, fix_unicode_keys
+    from minister.proxy import Proxy
+    from minister.util import json, fix_unicode_keys
 except ImportError:
     print os.environ
     raise RuntimeError("Unable to find minister in our environment.")
@@ -27,6 +28,14 @@ class Service(Resource):
     url = None
     type = 'service'
     health = None
+    
+    log_level = "INFO"
+    log_count = 4
+    log_max_bytes = 2**24       # 16Mb
+    log_format = "%(asctime)s - %(levelname)s - %(message)s"
+    log_echo = False
+    
+    _failed = False
 
     ### Class Methods #####################
     @classmethod
@@ -45,7 +54,6 @@ class Service(Resource):
     ### Instance Methods ###################
     def init(self):
         if not getattr(self, '_socket', None):
-            from minister.proxy import Proxy
         
             self._socket = socket.socket()
             self._socket.bind(tuple(self.address))
@@ -54,7 +62,7 @@ class Service(Resource):
             self.address = self._socket.getsockname()
             self._proxy = Proxy(address=self.address)
             self._processes = []
-        
+            
         self.layout = Resource.create(self.layout)
     
     def simple(self):
@@ -117,9 +125,8 @@ class Service(Resource):
                 process = Process(self.path, self.executable, self.args, self.get_environ())
                 self._processes.append( process )
                 process.run()
-            except Exception, e:
-                print "Process failed."
-                print_tb(e)
+            except:
+                logging.getLogger('minister').exception("process startup failed")
     
     def shell(self, cmd):
         from minister.util import system
@@ -146,25 +153,32 @@ class Service(Resource):
         if self.disabled:
             return "disabled"
             
+        if self._failed:
+            return "failed"
+            
         active = 0
+        failed = True
         for process in self._processes:
             done, status = process.check()
             if not done:
+                failed = False
                 active += 1
             elif process.is_failure():
                 process.kill()
                 self._processes.remove(process)
             else:
+                failed = False
                 process.kill()
                 process.run()
-                active += .5
         
         total = self.num_processes
         plural = 'es'
         if total == 1:
             plural = ''
         
-        if active == 0:
+        if failed:
+            logging.getLogger('minister').error("service failed: %s", self.path)
+            self._failed = True
             return 'failed', '0 of %d process%s' % (total, plural)
         elif active == total:
             return 'active', '%d of %d process%s' % (active, total, plural)
@@ -239,11 +253,10 @@ class Process(object):
             args = [self.executable] + list(self.args)
             os.execvpe(self.executable, args, self.environ)
         except OSError, e:
-            print "%s:" % e, " ".join(args)
+            logging.getLogger('minister').error("%s - %s", " ".join(args), str(e))
             os._exit(0)
         except Exception, e:
-            print "Process start failed."
-            print_tb(e)
+            logging.getLogger('minister').exception("process startup failed")
             os._exit(0)
 
 

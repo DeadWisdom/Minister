@@ -1,4 +1,5 @@
-import os, traceback, sys, logging, re
+import os, traceback, sys, re
+import logging, logging.handlers
 
 try:
     import json
@@ -83,7 +84,52 @@ def error_info(e):
         info['locals'].append( (key, value) )
 
     return info
-    
 
 def render_error(start_response, environ, error):
     start_response(error, [])
+
+def get_logger(path=None, name=None, level=None, max_bytes=None, count=None, format=None, echo=None):
+    path = os.path.join(path, 'logs', name + ".log")
+    base = os.path.dirname(path)
+    if not os.path.isdir(base):
+        os.makedirs(base)
+    
+    logger = logging.getLogger(name)
+    logger.setLevel(0)
+
+    formatter = logging.Formatter(format)
+    
+    handler = logging.handlers.RotatingFileHandler(path, maxBytes=max_bytes, backupCount=count)
+    handler.setLevel(getattr( logging, level.upper() ))
+    handler.setFormatter(formatter)
+    logger.addHandler( handler )
+    
+    if (echo):
+        handler = logging.StreamHandler()
+        if isinstance(echo, basestring):
+            handler.setLevel(getattr( logging, echo.upper() ))
+        else:
+            handler.setLevel(getattr( logging, level.upper() ))
+        handler.setFormatter(formatter)
+        logger.addHandler( handler )    
+    
+    return logger
+
+class FileLikeLogger(object):
+    """Acts like a file, but just logs to the logger."""
+    def __init__(self, name, level="info"):
+        self.logger = logging.getLogger(name)
+        self.level = level
+    
+    def write(self, output):
+        getattr(self.logger, self.level)(output.strip())
+        
+
+### Create the root logger that does nothing. ###
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+root = logging.getLogger()
+root.addHandler(NullHandler())
+root.setLevel(0)

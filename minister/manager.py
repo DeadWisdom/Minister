@@ -7,7 +7,7 @@ from http import Http404, Http500
 from resource import Resource
 from tokens import ServiceToken
 from service import Service
-from util import json, fix_unicode_keys, print_tb
+from util import json, fix_unicode_keys, get_logger, FileLikeLogger
 from debug import HttpDebug500, HttpDebug404
 
 class Manager(Resource):
@@ -17,20 +17,36 @@ class Manager(Resource):
     services = None
     debug = True
     
+    log_level = "DEBUG"
+    log_count = 4
+    log_max_bytes = 2**25       # 32Mb
+    log_format = "%(asctime)s - %(levelname)s - %(message)s"
+    log_echo = False
+    
     def init(self):
         self.path = os.path.abspath(self.path)
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
         
+        self._log = get_logger(self.path,
+                               "minister",
+                               level=self.log_level,
+                               max_bytes=self.log_max_bytes,
+                               count=self.log_count,
+                               format=self.log_format,
+                               echo=self.log_echo)
+                               
         tokens = [ServiceToken(s) for s in self.services]
         for t in tokens:
             t._manager = self
+            
         self.services = Resource.create( tokens )
         self.layout = Resource.create( self.layout or [] )
         
         self._tokens = dict((t.path, t) for t in tokens)
         self._threads = []
         self._socket = None
+        
     
     def save(self):
         file = open(os.path.join(self.path, 'config.json'), 'w')
@@ -55,7 +71,7 @@ class Manager(Resource):
             return
         
         for token in self._tokens.values():
-            print "loading service -", token.properties.get('path')
+            self._log.info("loading service: %s", token.properties.get('path'))
             token.deploy()
             
         service_path = os.path.join(self.path, 'services')
@@ -71,7 +87,8 @@ class Manager(Resource):
             self._socket.bind(address)
             self._socket.listen(500)
             
-            wsgi.server(self._socket, self)#, log=open(os.devnull, 'w'))
+            self._log.info("manager serving at %s:%s", *address)
+            wsgi.server(self._socket, self, log=FileLikeLogger('minister'))
         finally:
             self.close()
         
@@ -102,37 +119,39 @@ class Manager(Resource):
         def loop():
             while True:
                 api.sleep(interval)
-                try:
-                    method()
-                except Exception, e:
-                    from util import print_tb
-                    print_tb(e)
+                method()
         self._threads.append( api.spawn(loop) )
     
     def update(self):
         for token in self._tokens.values():
             if token.status in ("active", "failed", "disabled", "mia"):
-                if token.check_source():
-                    token.redeploy()
+                try:
+                    if token.check_source():
+                        self._log.info("reloading service: %s", token.properties.get('path'))
+                        token.redeploy()
+                except Exception, e:
+                    self._log.exception("error updating service: %s", e)
                 
     def scan(self):
         service_path = os.path.join(self.path, 'services')
         new = []
         for filename in os.listdir( service_path ):
-            path = os.path.join(service_path, filename)
-            if os.path.isdir(path) and path not in self._tokens:
-                t = ServiceToken({'path': os.path.abspath(path)})
-                if t.is_valid():
-                    new.append(t)
-                    self._tokens[t.path] = t
-                    self.services.resources.append(t)
-                    t._manager = self
-                    t.deploy()
+            try:
+                path = os.path.join(service_path, filename)
+                if os.path.isdir(path) and path not in self._tokens:
+                    t = ServiceToken({'path': os.path.abspath(path)})
+                    if t.is_valid():
+                        new.append(t)
+                        self._tokens[t.path] = t
+                        self.services.resources.append(t)
+                        t._manager = self
+                        t.deploy()
+            except Exception, e:
+                self._log.exception("error scanning file (%s): %s", filename, e)
+                
         if new:
             self.save()
-            print "new services found:"
-            for t in new:
-                print " ", t.properties.get('path')
+            self._log.info("new services found: \n%s" % "  \n".join([t.properties.get('path') for t in new]))
 
 def run():
     from optparse import OptionParser
@@ -157,6 +176,11 @@ def run():
                         help="Run in GROUP.", 
                         metavar="GROUP", 
                         default=None)
+                        
+    parser.add_option("-v", "--verbose", 
+                        action="store_true", dest="verbose",
+                        help="Output logging info to stdout.", 
+                        default=False)
     
     options, args = parser.parse_args()
     if len(args) > 1:
@@ -187,6 +211,10 @@ def run():
         }
     
     config['path'] = options.path
+    if options.verbose:
+        config['log_echo'] = True
+    else:
+        config['log_echo'] = "WARNING"
     
     manager = Manager(**config)
     atexit.register(manager.close)

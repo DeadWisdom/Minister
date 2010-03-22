@@ -10,7 +10,7 @@ from uuid import uuid4
 from service import Service
 from resource import Resource
 from source import Source
-from util import MutableFile, fix_unicode_keys, print_tb
+from util import MutableFile, fix_unicode_keys
 
 TOKEN_STATES = {
     "updating":         "Awaiting deployment, as the source updates.",
@@ -61,6 +61,14 @@ class ServiceToken(Resource):
     extra = property(get_extra, set_extra)
     
     @property
+    def slug(self):
+        slug = os.path.dirname( properties.get('path') )
+        if slug:
+            return slug
+        else:
+            return properties.get('path')
+    
+    @property
     def path(self):
         return self.properties['path']
     
@@ -92,8 +100,7 @@ class ServiceToken(Resource):
             self._service = Resource.create(config)
             self._service._manager = self._manager
         except Exception, e:
-            print_tb(e)
-            raise e
+            self._manager._log.exception(e)
         
         if self._service.disabled:
             self.status = 'disabled'
@@ -136,7 +143,7 @@ class ServiceToken(Resource):
                 if not self.type:
                     self.type = self._config.get('type', None)
             except Exception, e:
-                print e
+                self._manager._log.exception(e)
                 self._config_file = None
                 self._config = {}
             return self._config
@@ -170,10 +177,11 @@ class ServiceToken(Resource):
         while True:
             try:
                 if self._config_file and self._config_file.is_stale():
+                    self._manager._log.info("reloading service: %s", self.properties.get('path'))
                     return self.redeploy()
                 self.status = self._service.check_status()
             except Exception, e:
-                from util import print_tb
+                self._manager._log.exception(e)
             api.sleep(interval)
     
     def _check_health_loop(self, interval=30):
@@ -182,8 +190,7 @@ class ServiceToken(Resource):
             try:
                 self._service.check_health()
             except Exception, e:
-                from util import print_tb
-                print_tb(e)
+                self._manager._log.exception(e)
     
     def info(self):
         if (self._service):
