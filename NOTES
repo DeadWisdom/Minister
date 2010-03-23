@@ -9,6 +9,7 @@
     Demonization - (also set user / group for root)
     Digest Auth
     Ruby Service - (gem manager?)
+    Resource / Health Monitoring
     Project Website / Mailing List
  -- Beta Release Milestone --
     Tests
