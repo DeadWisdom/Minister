@@ -30,7 +30,7 @@ __author__ = 'Allan Saddi <allan@saddi.com>'
 __version__ = '$Revision: 2107 $'
 
 from eventlet.green import socket, select
-from eventlet import api
+import eventlet
 import struct
 import errno
 
@@ -298,7 +298,7 @@ class FastCGI(Resource):
             rec.contentData = s
             rec.contentLength = len(s)
             rec.write(sock)
-            api.sleep(0)
+            eventlet.sleep(0)
             
             if not s: break
 

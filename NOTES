@@ -1,6 +1,5 @@
 = TODO =
     Fix PHP Bugs
-    Process Refactor - (rebase onto eventlet.green.subprocess for everything)
  -- Use As My Actual Webserver Milestone --
     Virtual Env System - (yay pip)
     Source Fixes - (make sure everything works properly)
@@ -28,3 +27,4 @@
  
 = DONE =
     Fix README
+    Process Refactor - (rebase onto eventlet.green.subprocess for everything)

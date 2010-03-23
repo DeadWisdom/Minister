@@ -1,5 +1,5 @@
-import os
-from eventlet import processes
+import os, logging
+from eventlet.green import subprocess
 
 __types__ = {}
 
@@ -25,15 +25,19 @@ class Source(object):
     def update(self, path):
         return os.path.exists(path)
     
-    def command(self, cmd, *args):
-        print "-", cmd, " ".join(args)
-        p = processes.Process(cmd, list(args))
-        p.run()
-        result = p.read()
-        for line in result.split('\n'):
-            print '    ', line
-        p.wait()
-        return result
+    def command(self, *args):
+        log = logging.getLogger("minister")
+        log.info("-" + " ".join(args))
+        popen = subprocess.Popen(list(args), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = popen.communicate()
+        
+        if err:
+            log.error('    ' + '    \n'.join([line for line in err.split('\n')]))
+            
+        if out:
+            log.error('    ' + '    \n'.join([line for line in out.split('\n')]))
+        
+        return out or err
 
 class RsyncSource(Source):
     type = "rsync"

@@ -1,4 +1,4 @@
-from eventlet import api
+import eventlet
 
 try:
     import json
@@ -62,11 +62,11 @@ class ServiceToken(Resource):
     
     @property
     def slug(self):
-        slug = os.path.dirname( properties.get('path') )
+        slug = os.path.basename( os.path.abspath(self.properties.get('path', '')) )
         if slug:
             return slug
         else:
-            return properties.get('path')
+            return self.properties.get('path')
     
     @property
     def path(self):
@@ -76,7 +76,7 @@ class ServiceToken(Resource):
     def deploy(self):
         if self._service:
             return
-        self._threads.append( api.spawn(self._deploy) )
+        self._threads.append( eventlet.spawn(self._deploy) )
         self.status = 'deploying'
     
     def _deploy(self):
@@ -96,9 +96,10 @@ class ServiceToken(Resource):
             config = {}
             config.update(self.load_config())
             config.update(self.properties)
+            config['_manager'] = self._manager
+            config['slug'] = self.slug
             
             self._service = Resource.create(config)
-            self._service._manager = self._manager
         except Exception, e:
             self._manager._log.exception(e)
         
@@ -107,11 +108,11 @@ class ServiceToken(Resource):
         else:
             self._service.start()
         
-        self._threads.append( api.spawn(self._check_status_loop) )
+        self._threads.append( eventlet.spawn(self._check_status_loop) )
         if (self._service.health):
             #print "Health Checker engaged [timeout: %r, interval: %r]" % (self._service.health.get('interval', 30), self._service.health.get('timeout', 10))
-            self._threads.append( api.spawn(self._check_health_loop, self._service.health.get('interval', 30)) )
-        self._threads.remove( api.getcurrent() )
+            self._threads.append( eventlet.spawn(self._check_health_loop, self._service.health.get('interval', 30)) )
+        self._threads.remove( eventlet.getcurrent() )
     
     def match_path(self, path):
         if not self._service:
@@ -160,9 +161,9 @@ class ServiceToken(Resource):
     def _withdraw(self):
         if self._threads:
             for g in self._threads:
-                if g is not api.getcurrent():
+                if g is not eventlet.getcurrent():
                     self._threads.remove(g)
-                    api.kill(g)
+                    eventlet.kill(g)
         
         if self._service:
             self._service.stop()
@@ -182,11 +183,11 @@ class ServiceToken(Resource):
                 self.status = self._service.check_status()
             except Exception, e:
                 self._manager._log.exception(e)
-            api.sleep(interval)
+            eventlet.sleep(interval)
     
     def _check_health_loop(self, interval=30):
         while True:
-            api.sleep(interval)
+            eventlet.sleep(interval)
             try:
                 self._service.check_health()
             except Exception, e:

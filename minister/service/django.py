@@ -17,11 +17,11 @@ class Service(base.Service):
 if __name__ == '__main__':
     settings = Service.setup_backend()
     
-    from eventlet import wsgi, api
+    from eventlet import wsgi
     from django.core.handlers.wsgi import WSGIHandler
     from django.core.servers.basehttp import AdminMediaHandler
     
     app = WSGIHandler()
     app = AdminMediaHandler(app)
 
-    wsgi.server(settings['socket'], app, log=settings['log'])
+    wsgi.server(settings['socket'], app)

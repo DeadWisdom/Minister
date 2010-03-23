@@ -1,6 +1,7 @@
 import os, sys, atexit
 
-from eventlet import wsgi, api
+import eventlet
+from eventlet import wsgi
 from eventlet.green import socket
 
 from http import Http404, Http500
@@ -54,7 +55,7 @@ class Manager(Resource):
     
     def close(self):
         while self._threads:
-            api.kill( self._threads.pop() )
+            eventlet.kill( self._threads.pop() )
         if self._socket:
             try:
                 self._socket.shutdown()
@@ -122,9 +123,9 @@ class Manager(Resource):
     def periodically(self, method, interval=1):
         def loop():
             while True:
-                api.sleep(interval)
+                eventlet.sleep(interval)
                 method()
-        self._threads.append( api.spawn(loop) )
+        self._threads.append( eventlet.spawn(loop) )
     
     def update(self):
         for token in self._tokens.values():

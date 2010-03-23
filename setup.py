@@ -22,7 +22,7 @@ setup(
     packages = find_packages(exclude=['libs', 'old', 'tests']),
     zip_safe = False,
     install_requires = [
-        'eventlet',
+        'eventlet>=0.9.7',
         'simplejson',
     ],
     entry_points = {
