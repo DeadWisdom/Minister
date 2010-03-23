@@ -29,6 +29,28 @@ Minister has four goals:
    services, but not interact with them yet.
 
 
+== Running While In Development ==
+   You can install minister and run it like normal:
+   > minister
+   
+   That will assume your minister repository is at ~/.minister
+   Or you can specify with:
+   > minister -p /path/to/repo
+   
+   Instead of having to install, you can also, from the minister source root:
+   > ./dev -p tests/repo
+   
+   That will start it up pointing to the repository in tests/repo.
+ 
+   There is also a debug mode, that currently merely outputs some info when
+   returning 404 or 500 errors, run with -d:
+   > ./dev -p tests/repo -d
+   
+   Also, you can run verbose, which will output anything that would go to
+   the logs also to the terminal:
+   > ./dev -p tests/repo -d -v
+
+
 == Brief Architecture ==
 Minister starts up by running the function "run()" in manager.py, which sets
 up the optparser, creates a Manager() instance, and calls its "serve()"
