@@ -1,6 +1,6 @@
 from base import Service
 
-import django
+import _django
 import php
 import wsgi
 import admin

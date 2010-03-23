@@ -21,6 +21,7 @@ class Static(Resource):
         
         requested_path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
         path = self.find_real_path(environ.get('SERVICE_PATH', ''), requested_path)
+        
         if not path:
             return Http404(environ, start_response)
         

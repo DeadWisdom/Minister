@@ -7,6 +7,7 @@
     LogPath - (fix the logs to take a logpath instead of path+name)
     Demonization - (also set user / group for root)
     Digest Auth
+    SSL Support
     Ruby Service - (gem manager?)
     Resource / Health Monitoring
     Project Website / Mailing List

@@ -6,8 +6,10 @@ As this constitutes a "substantial portion", WSGIProxy Contains the following no
 # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 """
 
+import eventlet, socket
 from resource import Resource
 from http import Http502
+#import http as httplib
 from eventlet.green import httplib
 from urllib import quote as url_quote
 
@@ -40,7 +42,7 @@ class Proxy(Resource):
         else:
             raise ValueError("Unknown scheme: %r" % scheme)
         
-        conn = ConnClass(self.address[0], self.address[1], True)
+        conn = ConnClass(*self.address)
         headers = {}
         for key, value in environ.items():
             if key.startswith('HTTP_'):
@@ -74,13 +76,12 @@ class Proxy(Resource):
         status = '%s %s' % (res.status, res.reason)
         start_response(status, headers_out)
         length = res.getheader('content-length')
-        # @@: This shouldn't really read in all the content at once
         if length is not None:
-            body = res.read(int(length))
+            body = [ res.read(int(length)) ]
         else:
-            body = res.read()
+            body = [ res.read() ]
         conn.close()
-        return [body]
+        return body
 
 def parse_headers(message):
     """

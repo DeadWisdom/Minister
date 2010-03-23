@@ -222,7 +222,7 @@ def run():
     
     config['path'] = options.path
     if options.verbose:
-        config['log_echo'] = True
+        config['log_echo'] = "DEBUG"
     else:
         config['log_echo'] = "WARNING"
     
