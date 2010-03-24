@@ -236,7 +236,7 @@ class Process(object):
     def __init__(self, path=None, executable=None, args=[], env={}, logger=None):
         self.pid = None
         self.path = os.path.abspath( path )
-        self.executable = os.path.join(self.path, executable)
+        self.executable = executable
         self.args = [executable] + args
         self.env = env
         self.logger = logger
