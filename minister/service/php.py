@@ -12,7 +12,6 @@ from minister.http import Http404
 class Service(fastcgi.Service):
     type = 'php'
     address = ('127.0.0.1', 0)
-    port_range = (10000, 20000)
     executable = 'php-cgi'
     ini = None
     options = {}
@@ -62,18 +61,6 @@ class Service(fastcgi.Service):
             environ['SCRIPT_FILENAME'] = path
         
         return self._resource(environ, start_response)
-    
-    def find_port(self):
-        host = self.address[0]
-        for port in range(*self.port_range):
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                s.bind((host, port))
-            except socket.error, e:
-                continue
-            else:
-                s.close()
-                return host, port
     
     def find_index(self, path):
         """Find an index file in the directory specified at path."""

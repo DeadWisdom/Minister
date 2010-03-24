@@ -14,6 +14,7 @@ except ImportError:
 class Service(Resource):
     ### Properties #######################
     address = ('', 0)
+    port_range = (10000, 20000)
     args = None
     before_deploy = []
     disabled = False
@@ -38,6 +39,9 @@ class Service(Resource):
     
     _failed = False
     _manager = None
+    
+    ### Class Properties ##################]
+    _used_addresses = set()
 
     ### Class Methods #####################
     @classmethod
@@ -225,7 +229,21 @@ class Service(Resource):
             for p in self._processes:
                 p.kill()
                 p.run()
-
+                
+    def find_port(self):
+        host = self.address[0]
+        for port in range(*self.port_range):
+            if (host, port) in self._used_addresses:
+                continue
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                s.bind((host, port))
+            except socket.error, e:
+                continue
+            else:
+                self._used_addresses.add((host, port))
+                s.close()
+                return host, port
 
 class Process(object):
     """
