@@ -37,7 +37,7 @@ class Service(base.Service):
         return "active"
     
     def __call__(self, environ, start_response):
-        path = environ['SCRIPT_NAME']
+        path = environ['PATH_INFO']
         if path == '':
             return self.main(environ, start_response)
         if path.startswith('services/'):

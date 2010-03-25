@@ -94,6 +94,7 @@ class Resource(object):
             return hostname == self.site
         if hostname in self.site:
             return True
+            
 
 class Simple(Resource):
     type = 'simple'
@@ -104,7 +105,6 @@ class Simple(Resource):
     def __call__(self, environ, start_response):
         start_response(self.status, self.headers)
         return (self.content, )
-
 
 class Layout(Resource):
     type = 'layout'
@@ -123,8 +123,8 @@ class Layout(Resource):
                 continue
             delta = resource.match_path(requested_path)
             if delta is not None:
-                environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + delta
-                environ['PATH_INFO'] = environ['PATH_INFO'][delta:]
+                environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + requested_path[:len(requested_path)-len(delta)]
+                environ['PATH_INFO'] = delta
                 return resource(environ, start_response)
     
     def add(self, resoures):
