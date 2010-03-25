@@ -119,6 +119,8 @@ class ServiceToken(Resource):
             #print "Health Checker engaged [timeout: %r, interval: %r]" % (self._service.health.get('interval', 30), self._service.health.get('timeout', 10))
             self._threads.append( eventlet.spawn(self._check_health_loop, self._service.health.get('interval', 30)) )
         self._threads.remove( eventlet.getcurrent() )
+        
+        self._manager.services.sort()
     
     def match_path(self, path):
         if not self._service:

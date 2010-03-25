@@ -111,7 +111,7 @@ class Layout(Resource):
     resources = []
     
     def init(self):
-        self.resources.sort(key=lambda x: x.priority)
+        self.sort()
     
     def __call__(self, environ, start_response):
         requested_path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
@@ -130,6 +130,9 @@ class Layout(Resource):
     
     def add(self, resoures):
         self.resources += list(resoures)
+        self.sort()
+    
+    def sort(self):
         self.resources.sort(key=lambda x: x.priority)
 
 class ListLayout(Layout):
