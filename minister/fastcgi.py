@@ -400,10 +400,10 @@ class FastCGI(Resource):
 
     def _fcgiParams(self, sock, requestId, params):
         rec = Record(FCGI_PARAMS, requestId)
-        data = []
+        data = StringIO.StringIO()
         for name,value in params.items():
-            data.append(encode_pair(name, value))
-        data = ''.join(data)
+            data.write(encode_pair(name, value))
+        data = data.getvalue()
         rec.contentData = data
         rec.contentLength = len(data)
         rec.write(sock)
