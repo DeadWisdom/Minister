@@ -62,11 +62,9 @@ class Service(fastcgi.Service):
         
         if 'minister.php_info' in environ:
             _SERVER['PATH_INFO'] = environ['minister.php_info']
-            _SERVER['PHP_SELF'] = environ['minister.php_info']
             del _SERVER['minister.php_info']
         else:
             _SERVER['PATH_INFO'] = ''
-            _SERVER['PHP_SELF'] = _SERVER['SCRIPT_NAME']
         
         if (environ['REQUEST_METHOD'] == 'POST' and not environ.get('CONTENT_TYPE')):
             _SERVER['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
