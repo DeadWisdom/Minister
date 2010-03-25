@@ -41,6 +41,7 @@ class Service(fastcgi.Service):
             environ["PATH_INFO"] = '/' + info
         else:
             environ['SCRIPT_NAME'] = path
+            environ["PATH_INFO"] = ''
         
         return self._static(environ, start_response)
         
