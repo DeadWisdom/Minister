@@ -105,7 +105,7 @@ class ServiceToken(Resource):
             config['_manager'] = self._manager
             config['slug'] = self.slug
             
-            if not config['type']:
+            if not config.get('type'):
                 self.status = "mia"
                 self._manager._log.error("Cannot find service:", self.path)
                 return
