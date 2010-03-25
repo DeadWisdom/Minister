@@ -27,7 +27,7 @@ class Service(Resource):
     path = None
     requires = ['minister', 'eventlet']
     site = None
-    url = None
+    url = ''
     type = 'service'
     health = None
     
