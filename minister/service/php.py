@@ -37,10 +37,10 @@ class Service(fastcgi.Service):
         path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
         if '.php/' in path:
             path, info = path.split('.php/', 1)
-            environ['SCRIPT_NAME'] = '/' + path + '.php'
+            environ['SCRIPT_NAME'] = path + '.php'
             environ["PATH_INFO"] = '/' + info
         else:
-            environ['SCRIPT_NAME'] = '/' + path
+            environ['SCRIPT_NAME'] = path
             environ["PATH_INFO"] = ''
         
         return self._static(environ, start_response)
@@ -51,7 +51,6 @@ class Service(fastcgi.Service):
         if 'REQUEST_URI' not in environ:
             # PHP likes to have this variable
             request_uri = [
-                '/',
                 self.url or '',
                 environ.get('SCRIPT_NAME', ''),
                 environ.get('PATH_INFO', ''),
@@ -60,8 +59,10 @@ class Service(fastcgi.Service):
                 request_uri.extend(['?', environ['QUERY_STRING']])
             _SERVER['REQUEST_URI'] = "".join(request_uri)
         
+        _SERVER['SCRIPT_NAME'] = "/" + _SERVER['SCRIPT_NAME']
         _SERVER['SCRIPT_FILENAME'] = path    
         _SERVER["DOCUMENT_ROOT"] = self.path
+        _SERVER["SERVER_NAME"] = environ["HTTP_HOST"]
         
         if (environ['REQUEST_METHOD'] == 'POST'
             and not environ.get('CONTENT_TYPE')):
