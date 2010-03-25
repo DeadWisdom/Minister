@@ -17,6 +17,7 @@ class Manager(Resource):
     layout = None
     services = None
     debug = False
+    address = None
     
     log_level = "DEBUG"
     log_count = 4
