@@ -19,7 +19,7 @@ class Static(Resource):
         if self.allow is not None and environ['REQUEST_METHOD'] not in self.allow:
             return Http405(environ, start_response, self.allow)
         
-        requested_path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
+        requested_path = environ.get('PATH_INFO', '')
         path = self.find_real_path(environ.get('SERVICE_PATH', ''), requested_path)
         
         if not path:
@@ -34,7 +34,7 @@ class Static(Resource):
                 index, path = self.find_index(path)
                 if path is None:
                     return self.dir_listing(environ, start_response, path)
-                environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + index
+                environ['PATH_INFO'] = requested_path + index
             else:
                 return Http301(environ, start_response, self.corrected_dir_uri(environ))
         

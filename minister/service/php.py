@@ -34,38 +34,39 @@ class Service(fastcgi.Service):
         self._static.set_handler('php', self._handle)
     
     def _proxy(self, environ, start_response):
-        path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
+        if 'REQUEST_URI' not in environ:
+            # PHP likes to have this variable
+            request_uri = [
+                environ.get('SCRIPT_NAME', ''),
+                environ.get('PATH_INFO', ''),
+            ]
+            if environ.get('QUERY_STRING'):
+                request_uri.extend(['?', environ['QUERY_STRING']])
+            environ['REQUEST_URI'] = "".join(request_uri)
+            
+        path = environ['PATH_INFO']
         if '.php/' in path:
             path, info = path.split('.php/', 1)
-            environ['SCRIPT_NAME'] = path + '.php'
-            environ["PATH_INFO"] = '/' + info
-        else:
-            environ['SCRIPT_NAME'] = path
-            environ["PATH_INFO"] = ''
+            environ['PATH_INFO'] = path + '.php'
+            environ['minister.php_info'] = '/' + info
         
         return self._static(environ, start_response)
         
     def _handle(self, environ, start_response, path):
         _SERVER = environ
         
-        if 'REQUEST_URI' not in environ:
-            # PHP likes to have this variable
-            request_uri = [
-                self.url or '',
-                environ.get('SCRIPT_NAME', ''),
-                environ.get('PATH_INFO', ''),
-            ]
-            if environ.get('QUERY_STRING'):
-                request_uri.extend(['?', environ['QUERY_STRING']])
-            _SERVER['REQUEST_URI'] = "".join(request_uri)
-        
-        _SERVER['SCRIPT_NAME'] = "/" + _SERVER['SCRIPT_NAME']
+        _SERVER['SCRIPT_NAME'] = _SERVER['SCRIPT_NAME'] + _SERVER['PATH_INFO'] 
         _SERVER['SCRIPT_FILENAME'] = path    
         _SERVER["DOCUMENT_ROOT"] = self.path
         _SERVER["SERVER_NAME"] = environ["HTTP_HOST"]
         
-        if (environ['REQUEST_METHOD'] == 'POST'
-            and not environ.get('CONTENT_TYPE')):
+        if 'minister.php_info' in environ:
+            _SERVER['PATH_INFO'] = environ['minister.php_info']
+            del _SERVER['minister.php_info']
+        else:
+            _SERVER['PATH_INFO'] = ''
+        
+        if (environ['REQUEST_METHOD'] == 'POST' and not environ.get('CONTENT_TYPE')):
             _SERVER['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
         
         return self._resource(_SERVER, start_response)

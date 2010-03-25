@@ -101,7 +101,9 @@ class Manager(Resource):
             self.close()
         
     def __call__(self, environ, start_response):
-        environ['SCRIPT_NAME'] = environ['PATH_INFO'][1:]
+        environ['ORIG_PATH_INFO'] = environ['PATH_INFO']
+        environ['SCRIPT_NAME'] = '/'
+        environ['PATH_INFO'] = environ['PATH_INFO'][1:]
         
         try:
             response = self.layout(environ, start_response)
