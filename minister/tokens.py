@@ -69,6 +69,12 @@ class ServiceToken(Resource):
             return self.properties.get('path')
     
     @property
+    def priority(self):
+        if (self._service):
+            return self._service.priority
+        return self.properties.get('priority', 0)
+    
+    @property
     def path(self):
         return self.properties['path']
     

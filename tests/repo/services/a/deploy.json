@@ -11,5 +11,6 @@
         "url": "health",
         "timeout": 2,
         "interval": 2
-    }
+    },
+    "priority": 1
 }
