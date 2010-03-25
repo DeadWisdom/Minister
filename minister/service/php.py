@@ -39,6 +39,8 @@ class Service(fastcgi.Service):
             path, info = path.split('.php/', 1)
             environ['SCRIPT_NAME'] = path + '.php'
             environ["PATH_INFO"] = '/' + info
+        else:
+            environ['SCRIPT_NAME'] = path
         
         return self._static(environ, start_response)
         
@@ -57,6 +59,7 @@ class Service(fastcgi.Service):
                 request_uri.extend(['?', environ['QUERY_STRING']])
             _SERVER['REQUEST_URI'] = "".join(request_uri)
         
+        _SERVER['SCRIPT_NAME'] = environ['SCRIPT_NAME']
         _SERVER['SCRIPT_FILENAME'] = path    
         _SERVER["DOCUMENT_ROOT"] = self.path
         
