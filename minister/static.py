@@ -31,9 +31,10 @@ class Static(Resource):
                 
         if os.path.isdir(path):
             if requested_path == '' or requested_path.endswith('/'):
-                path = self.find_index(path)
+                index, path = self.find_index(path)
                 if path is None:
                     return self.dir_listing(environ, start_response, path)
+                environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + index
             else:
                 print "Correcting:", requested_path, path
                 return Http301(environ, start_response, self.corrected_dir_uri(environ))
@@ -114,8 +115,8 @@ class Static(Resource):
         for i in self.index:
             candidate = os.path.join(path, i)
             if os.path.isfile(candidate):
-                return candidate
-        return None
+                return i, candidate
+        return None, None
     
     def dir_listing(self, environ, start_response, path):
         """The client is requesting a directory with no index."""

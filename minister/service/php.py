@@ -59,7 +59,6 @@ class Service(fastcgi.Service):
                 request_uri.extend(['?', environ['QUERY_STRING']])
             _SERVER['REQUEST_URI'] = "".join(request_uri)
         
-        _SERVER['SCRIPT_NAME'] = environ['SCRIPT_NAME']
         _SERVER['SCRIPT_FILENAME'] = path    
         _SERVER["DOCUMENT_ROOT"] = self.path
         
