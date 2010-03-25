@@ -43,22 +43,24 @@ class Service(fastcgi.Service):
         return self._static(environ, start_response)
         
     def _handle(self, environ, start_response, path):
+        _SERVER = environ
+        
         if 'REQUEST_URI' not in environ:
             # PHP likes to have this variable
             request_uri = [
+                '/',
+                self.url or '',
                 environ.get('SCRIPT_NAME', ''),
                 environ.get('PATH_INFO', ''),
             ]
             if environ.get('QUERY_STRING'):
                 request_uri.extend(['?', environ['QUERY_STRING']])
-            environ['REQUEST_URI'] = "".join(request_uri)
+            _SERVER['REQUEST_URI'] = "".join(request_uri)
         
-        if '/' in path:
-            environ['SCRIPT_FILENAME'] = path.rsplit('/', 1)[1]
-        else:
-            environ['SCRIPT_FILENAME'] = path
+        _SERVER['SCRIPT_FILENAME'] = path    
+        _SERVER["DOCUMENT_ROOT"] = self.path
         
-        return self._resource(environ, start_response)
+        return self._resource(_SERVER, start_response)
     
     def find_index(self, path):
         """Find an index file in the directory specified at path."""
