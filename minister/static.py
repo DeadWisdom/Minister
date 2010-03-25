@@ -5,7 +5,7 @@ from http import Http404, Http304, Http405, Http301
 
 class Static(Resource):
     type = 'static'
-    _allowed = ('HEAD', 'GET')
+    allow = ('HEAD', 'GET')
     root = '.'
     default_type = 'text/plain'
     read_block_size = 16 * 4096
@@ -16,8 +16,8 @@ class Static(Resource):
     
     def __call__(self, environ, start_response):
         """Respond to a request when called in the usual WSGI way."""
-        if environ['REQUEST_METHOD'] not in self._allowed:
-            return Http405(environ, start_response, self._allowed)
+        if self.allow is not None and environ['REQUEST_METHOD'] not in self.allow:
+            return Http405(environ, start_response, self.allow)
         
         requested_path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
         path = self.find_real_path(environ.get('SERVICE_PATH', ''), requested_path)

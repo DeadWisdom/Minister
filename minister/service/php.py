@@ -30,7 +30,7 @@ class Service(fastcgi.Service):
         
         super(Service, self).init()
         
-        self._static = Static(index=self.index, root=self.path)
+        self._static = Static(index=self.index, root=self.path, allow=None)
         self._static.set_handler('php', self._handle)
     
     def _proxy(self, environ, start_response):
