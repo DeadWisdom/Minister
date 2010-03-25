@@ -33,6 +33,7 @@ from eventlet.green import socket, select
 import eventlet
 import struct
 import errno
+import StringIO
 
 __all__ = ['FastCGI']
 
@@ -378,10 +379,10 @@ class FastCGI(Resource):
     def _fcgiGetValues(self, sock, vars):
         # Construct FCGI_GET_VALUES record
         outrec = Record(FCGI_GET_VALUES)
-        data = []
+        data = StringIO.StringIO()
         for name in vars:
-            data.append(encode_pair(name, ''))
-        data = ''.join(data)
+            data.write(encode_pair(name, ''))
+        data = data.getvalue()
         outrec.contentData = data
         outrec.contentLength = len(data)
         outrec.write(sock)
