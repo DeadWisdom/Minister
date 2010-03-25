@@ -37,10 +37,10 @@ class Service(fastcgi.Service):
         path = environ.get('SCRIPT_NAME', environ.get('PATH_INFO', ''))
         if '.php/' in path:
             path, info = path.split('.php/', 1)
-            environ['SCRIPT_NAME'] = path + '.php'
+            environ['SCRIPT_NAME'] = '/' + path + '.php'
             environ["PATH_INFO"] = '/' + info
         else:
-            environ['SCRIPT_NAME'] = path
+            environ['SCRIPT_NAME'] = '/' + path
             environ["PATH_INFO"] = ''
         
         return self._static(environ, start_response)
