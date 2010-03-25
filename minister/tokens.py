@@ -218,6 +218,7 @@ class ServiceToken(Resource):
         shutil.rmtree(self.path, True)
     
     def simple(self):
+        self.properties['priority'] = self.priority
         return self.properties.copy()
     
     def __call__(self, environ, start_response):

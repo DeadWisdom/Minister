@@ -133,7 +133,7 @@ class Layout(Resource):
         self.sort()
     
     def sort(self):
-        self.resources.sort(key=lambda x: x.priority)
+        self.resources.sort(key=lambda x: x.priority, reverse=True)
 
 class ListLayout(Layout):
     """ Like a layout, but simplifies to a list. """
