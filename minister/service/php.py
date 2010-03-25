@@ -43,8 +43,6 @@ class Service(fastcgi.Service):
         return self._static(environ, start_response)
         
     def _handle(self, environ, start_response, path):
-        environ['SCRIPT_NAME'] = path
-        
         if 'REQUEST_URI' not in environ:
             # PHP likes to have this variable
             request_uri = [
