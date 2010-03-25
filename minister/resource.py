@@ -78,7 +78,7 @@ class Resource(object):
     
     def match_path(self, path):
         if self.url is None:
-            return False
+            return None
         if self.url == '*':
             return path
         if self.url is not None and path.startswith(self.url):
