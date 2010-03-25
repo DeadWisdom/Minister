@@ -380,8 +380,8 @@ class FastCGI(Resource):
         outrec = Record(FCGI_GET_VALUES)
         data = []
         for name in vars:
-            data.append(encode_pair(name, ''))
-        data = u''.join(data)
+            data.append(str(encode_pair(name, '')))
+        data = ''.join(data)
         outrec.contentData = data
         outrec.contentLength = len(data)
         outrec.write(sock)
@@ -401,8 +401,8 @@ class FastCGI(Resource):
         rec = Record(FCGI_PARAMS, requestId)
         data = []
         for name,value in params.items():
-            data.append(encode_pair(name, value))
-        data = u''.join(data)
+            data.append(str(encode_pair(name, value)))
+        data = ''.join(data)
         rec.contentData = data
         rec.contentLength = len(data)
         rec.write(sock)
