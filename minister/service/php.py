@@ -62,6 +62,10 @@ class Service(fastcgi.Service):
         _SERVER['SCRIPT_FILENAME'] = path    
         _SERVER["DOCUMENT_ROOT"] = self.path
         
+        if (environ['REQUEST_METHOD'] == 'POST'
+            and not environ.get('CONTENT_TYPE')):
+            _SERVER['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
+        
         return self._resource(_SERVER, start_response)
     
     def find_index(self, path):

@@ -36,7 +36,6 @@ class Static(Resource):
                     return self.dir_listing(environ, start_response, path)
                 environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + index
             else:
-                print "Correcting:", requested_path, path
                 return Http301(environ, start_response, self.corrected_dir_uri(environ))
         
         try:
