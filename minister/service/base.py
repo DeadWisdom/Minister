@@ -260,24 +260,24 @@ class Process(object):
         self.logger = logger
         self.returncode = None
         
-        self._popen = None
+        self._process = None
         self._starts = []   # We keep track of start times, so that we can
                             # tell how many times we restarted.
     
     def readloop(self):
         def outloop():
             while True:
-                if not self._popen:
+                if not self._process:
                     return
-                line = self._popen.stdout.readline()
+                line = self._process.stdout.readline()
                 if not line:
                     return
                 self.logger.info(line[:-1])
         def errloop():
             while True:
-                if not self._popen:
+                if not self._process:
                     return
-                line = self._popen.stderr.readline()
+                line = self._process.stderr.readline()
                 if not line:
                     return
                 self.logger.error(line[:-1])
@@ -290,7 +290,7 @@ class Process(object):
         self._starts = self._starts[-3:]
         
         try:
-            self._popen = subprocess.Popen(
+            self._process = subprocess.Popen(
                                 self.args,
                                 executable = self.executable,
                                 stdout = subprocess.PIPE,
@@ -310,11 +310,11 @@ class Process(object):
         Returns True if the process is running.  When it fails, the returncode
         will be available as the ``returncode`` attribute.
         """
-        if (not self._popen):
+        if (not self._process):
             return False
-        if self._popen.poll():
-            self.returncode = self._popen.returncode
-            self._popen = None
+        if self._process.poll():
+            self.returncode = self._process.returncode
+            self._process = None
             return False
         return True
     
@@ -331,16 +331,30 @@ class Process(object):
     
     def terminate(self):
         """
-        Terminate the prorcess, sends SIGTERM.  On windows this is the same
+        Terminate the process, sends SIGTERM.  On windows this is the same
         as kill().
         """
-        if self._popen:
-            self._popen.terminate()
+        if self._process:
+            if hasattr(self._process, 'terminate'): # python >= 2.6
+                self._process.terminate()
+            elif sys.platform.startswith('win'):    # Windows, python <= 2.5
+                import win32process
+                return win32process.TerminateProcess(self._process._handle, -1)
+            else:                                   # Posix, python <= 2.5
+                import signal
+                os.kill(self._process.pid, signal.SIGTERM)
     
     def kill(self):
         """
-        Kills the prorcess, sends SIGKILL.  On windows this is the same
+        Kills the process, sends SIGKILL.  On windows this is the same
         as terminate().
         """
-        if self._popen:
-            self._popen.kill()
+        if self._process:
+            if hasattr(self._process, 'kill'):      # python >= 2.6
+                self._process.kill()
+            elif sys.platform.startswith('win'):    # Windows, python <= 2.5
+                import win32process
+                return win32process.TerminateProcess(self._process._handle, -1)
+            else:                                   # Posix, python <= 2.5
+                import signal
+                os.kill(self._process.pid, signal.SIGKILL)
