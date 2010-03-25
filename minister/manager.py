@@ -91,6 +91,8 @@ class Manager(Resource):
             if (address[0] == ''):
                 address = 'localhost', address[1]
             
+            self.address = address
+            
             print "Manager servering on http://%s:%s" % address
             self._log.info("manager serving on http://%s:%s", *address)
             wsgi.server(self._socket, self, log=FileLikeLogger('minister'))

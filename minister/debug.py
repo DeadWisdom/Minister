@@ -29,9 +29,14 @@ url_template = """<div class='url'><a href="{{site}}/{{url}}">{{site}}/{{url}}</
 
 def HttpDebug404(environ, start_response, manager):
     urls = []
+    if manager.address[1] != '80':
+        port = ":%s" % manager.address[1]
+    else:
+        port = ""
+        
     for resource in manager.layout.resources:
         if resource.site:
-            site = "http://" + resource.site
+            site = "http://" + resource.site + port
         else:
             site = ""
         urls.append( simple_template(url_template, {'url': resource.url, 'site': site}) )
@@ -43,8 +48,11 @@ def HttpDebug404(environ, start_response, manager):
             continue
             
         url = resource._service.url
+        if url is None:
+            continue
+        
         if resource._service.site not in ('*', None):
-            site = "http://" + resource._service.site
+            site = "http://" + resource._service.site + port
         else:
             site = ""
         urls.append( simple_template(url_template, {'url': url, 'site': site}) )
