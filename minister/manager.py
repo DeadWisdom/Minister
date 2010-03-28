@@ -4,6 +4,7 @@ import eventlet
 from eventlet import wsgi
 from eventlet.green import socket
 
+import daemon
 from http import Http404, Http500
 from resource import Resource
 from tokens import ServiceToken
@@ -48,7 +49,6 @@ class Manager(Resource):
         self._tokens = dict((t.path, t) for t in tokens)
         self._threads = []
         self._socket = None
-        
     
     def save(self):
         file = open(os.path.join(self.path, 'config.json'), 'w')
@@ -68,7 +68,15 @@ class Manager(Resource):
             except:
                 pass
     
-    def serve(self, address=('', 8000), debug=False):
+    @classmethod
+    def listen(cls, address):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(address)
+        sock.listen(500)
+        return sock
+    
+    def serve(self, where=('', 8000), debug=False):
         if self._socket:
             return
         
@@ -84,18 +92,15 @@ class Manager(Resource):
         self.periodically(self.update, 60 * 30)
         
         try:
-            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self._socket.bind(address)
-            self._socket.listen(500)
+            if isinstance(where, socket.socket):
+                self._socket = where
+            else:
+                self._socket = self.listen(where)
             
-            if (address[0] == ''):
-                address = 'localhost', address[1]
+            self.address = self._socket.getsockname()
             
-            self.address = address
-            
-            print "Manager servering on http://%s:%s" % address
-            self._log.info("manager serving on http://%s:%s", *address)
+            print "Manager servering on http://%s:%s" % self.address
+            self._log.info("manager serving on http://%s:%s", *self.address)
             wsgi.server(self._socket, self, log=FileLikeLogger('minister'))
         finally:
             self.close()
@@ -196,6 +201,23 @@ def run():
                         action="store_true", dest="debug",
                         help="Run in debug mode.", 
                         default=False)
+                        
+    parser.add_option('--start', 
+                        dest='start', 
+                        action='store_true',
+                        help="Start the process as a daemon.")
+                        
+    parser.add_option('--stop', 
+                        dest='stop', 
+                        action='store_true',
+                        help="Stop the daemon.")
+                        
+    parser.add_option('--restart', 
+                        dest='restart', 
+                        action='store_true',
+                        help="Restart the process daemon.")
+    
+    we_are_root = (os.geteuid() == 0)
     
     options, args = parser.parse_args()
     if len(args) > 1:
@@ -203,7 +225,10 @@ def run():
         return
     
     if not args:
-        address = ('', 8000)
+        if we_are_root:
+            address = ('0.0.0.0', 80)
+        else:
+            address = ('', 8000)
     else:
         ip, _, port = args[0].partition(':')
         if ip and not port:
@@ -215,7 +240,10 @@ def run():
             return
 
     if options.path is None:
-        options.path = os.path.expanduser("~/.minister")
+        if we_are_root:
+            options.path = os.path('/var/minister')
+        else:
+            options.path = os.path.expanduser("~/.minister")
 
     try:
         file = open(os.path.join(options.path, 'config.json'))
@@ -234,6 +262,34 @@ def run():
     if options.debug:
         config['debug'] = True
     
+    if we_are_root:
+        if not options.user:
+            sys.stderr.write("No user specified, please specify a user to "\
+                             "change to when running as root.\n")
+            sys.exit(1)
+        address = Manager.listen(address)
+        if options.group:
+            os.setgroup(options.user)
+        os.setuid(options.user)
+    
+    pidfile = os.path.join(options.path, 'minister.pid')
+    if options.start:
+        print "Minister daemon starting..."
+        daemon.start(pidfile)
+    elif options.stop:
+        if daemon.stop(pidfile):
+            print "Minister stopped."
+            sys.exit(0)
+        else:
+            sys.exit(1)
+    elif options.restart:
+        daemon.stop(pidfile)
+        print "Minister stopped."
+        print "Minister daemon starting..."
+        daemon.start(pidfile)
+        
     manager = Manager(**config)
     atexit.register(manager.close)
     manager.serve(address)
+    
+    

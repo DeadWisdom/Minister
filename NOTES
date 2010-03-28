@@ -1,5 +1,4 @@
 = TODO =
-    Fix PHP Bugs
  -- Use As My Actual Webserver Milestone --
     Virtual Env System - (yay pip)
     Source Fixes - (make sure everything works properly)
@@ -29,3 +28,5 @@
 = DONE =
     Fix README
     Process Refactor - (rebase onto eventlet.green.subprocess for everything)
+    Fix PHP Bugs
+    Daemon Dance
