@@ -168,6 +168,18 @@ class Manager(Resource):
             self.save()
             self._log.info("new services found: \n%s" % "  \n".join([t.properties.get('path') for t in new]))
 
+def set_process_owner(spec, group=None):
+    import pwd, grp
+    if ":" in spec:
+        user, group = spec.split(":", 1)
+    else:
+        user, group = spec, group
+    if group:
+        os.setgid(grp.getgrnam(group).gr_gid)
+    if user:
+        os.setuid(pwd.getpwnam(user).pw_uid)
+    return user, group
+
 def run():
     from optparse import OptionParser
 
@@ -241,9 +253,13 @@ def run():
 
     if options.path is None:
         if we_are_root:
-            options.path = os.path('/var/minister')
+            options.path = '/var/minister'
         else:
             options.path = os.path.expanduser("~/.minister")
+    
+    if not os.path.exists(options.path):
+        sys.stderr.write("Path to minister root does not exist: %s\n" % options.path)
+        sys.exit(0)
 
     try:
         file = open(os.path.join(options.path, 'config.json'))
@@ -262,16 +278,6 @@ def run():
     if options.debug:
         config['debug'] = True
     
-    if we_are_root:
-        if not options.user:
-            sys.stderr.write("No user specified, please specify a user to "\
-                             "change to when running as root.\n")
-            sys.exit(1)
-        address = Manager.listen(address)
-        if options.group:
-            os.setgroup(options.user)
-        os.setuid(options.user)
-    
     pidfile = os.path.join(options.path, 'minister.pid')
     if options.start:
         print "Minister daemon starting..."
@@ -287,6 +293,14 @@ def run():
         print "Minister stopped."
         print "Minister daemon starting..."
         daemon.start(pidfile)
+        
+    if we_are_root:
+        if not options.user:
+            sys.stderr.write("No user specified, please specify a user to "\
+                             "change to when running as root.\n")
+            sys.exit(1)
+        address = Manager.listen(address)
+        set_process_owner(options.user, options.group)
         
     manager = Manager(**config)
     atexit.register(manager.close)
