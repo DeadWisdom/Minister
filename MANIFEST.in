@@ -1,0 +1,2 @@
+include minister/service/admin/media/*
+include minister/service/admin/media/icons/*

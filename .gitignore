@@ -6,3 +6,6 @@ config.json
 logs
 env
 ignore
+build
+dist
+minister.egg-info

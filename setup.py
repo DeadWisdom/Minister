@@ -20,6 +20,7 @@ setup(
     url = '',
     license = 'MIT',
     packages = find_packages(exclude=['libs', 'old', 'tests']),
+    include_package_data=True,
     zip_safe = False,
     install_requires = [
         'eventlet>=0.9.7',
