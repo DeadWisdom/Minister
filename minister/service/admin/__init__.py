@@ -46,7 +46,7 @@ class Service(base.Service):
         return self.layout(environ, start_response)
     
     def main(self, environ, start_response):
-        return HttpResponse(environ, start_response, simple_template(self._index.read(), {'url': '/%s' % self.url}))
+        return HttpResponse(environ, start_response, content=simple_template(self._index.read(), {'url': '/%s' % self.url}))
     
     def services(self, environ, start_response):
         path = environ['PATH_INFO']

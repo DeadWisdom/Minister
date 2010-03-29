@@ -194,7 +194,7 @@ def run():
                         
     parser.add_option("-u", "--user", 
                         dest="user", 
-                        help="Run as USER", 
+                        help="Run as USER (defaults to www-data if run by root)", 
                         metavar="USER", 
                         default=None)
                         
@@ -295,12 +295,8 @@ def run():
         daemon.start(pidfile)
         
     if we_are_root:
-        if not options.user:
-            sys.stderr.write("No user specified, please specify a user to "\
-                             "change to when running as root.\n")
-            sys.exit(1)
         address = Manager.listen(address)
-        set_process_owner(options.user, options.group)
+        set_process_owner(options.user or "www-data", options.group)
         
     manager = Manager(**config)
     atexit.register(manager.close)

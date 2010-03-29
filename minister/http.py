@@ -15,8 +15,8 @@ template = """<html><head>
 def render(title, msg=''):
     return simple_template(template, {'title': title, 'msg': msg})
 
-def HttpResponse(environ, start_response, content='', headers=[], type='text/html'):
-    headers.append(('Content-Type', type))
+def HttpResponse(environ, start_response, content='', headers=None, type='text/html'):
+    headers = headers or [('Content-Type', type)]
     start_response("200 OK", headers)
     if isinstance(content, basestring):
         return (content,)
@@ -26,8 +26,8 @@ def Http301(environ, start_response, uri):
     start_response('301 Moved Permanently', [('Location', uri)])
     return ("",)
 
-def Http304(environ, start_response, headers=[]):
-    start_response('304 Not Modified', headers)
+def Http304(environ, start_response, headers=None):
+    start_response('304 Not Modified', headers or [])
     return ("",)
 
 def Http404(environ, start_response, msg="404 Not Found"):
