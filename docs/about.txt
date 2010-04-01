@@ -1,4 +1,4 @@
-The Minister of Web Services
+About The Minister of Web Services
 ===================================
 
 Minister is a web-server that matches the needs of modern web development. 
@@ -8,11 +8,11 @@ expectations and assumptions.
 
 Minister has five primary goals:
 
-* Make application deployment extremely simple.
-* Separate applications into distinct environments.
-* Monitor, restart, and scale applications automatically.
-* Provide a web-resource for the server itself.
-* Do all this with competitive speed and security.
+    * Make application deployment extremely simple.
+    * Separate applications into distinct environments.
+    * Monitor, restart, and scale applications automatically.
+    * Provide a web-resource for the server itself.
+    * Do all this with competitive speed and security.
 
 To do this, Minister starts up a front-end process, and then creates
 sub-processes for every application, which it then proxies requests to. It's a
