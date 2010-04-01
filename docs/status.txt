@@ -1,0 +1,44 @@
+Project Status
+==================
+
+Minister is currently in an alpha stage of heavy development. We are
+pre-release, and so the code and api may change wildly. Further, stability,
+security, and speed concerns have not been fully addressed. Minister is
+suggested only for developers who wish to get in early on a promising new
+project.
+
+Current Features
+------------------
+
+ * Static file serving
+ * Process management
+ * Self healing (on process failure)
+ * Reverse proxy support
+ * Dynamic configuration (deploy.json in the service directory)
+ * Automatic service code updating (source: config option)
+ * Logging
+ * FastCGI support
+ * Debugging error pages (option --debug)
+ * Daemonization (option --start / --stop / --restart)
+ * Python WSGI service
+ * Django service
+ * PHP service
+ * Native Admin page to check the server status
+ 
+Planned Features
+------------------
+
+ * Ruby service
+ * Java service
+ * Memcachedb service
+ * Redis service
+ * Task system (somewhat like cron)
+ * Digest Auth
+ * SSL Support
+ * Virtual Env / Pip system to manage python service requirements
+ * Gem management for ruby service requirements
+ * Resource / Health monitoring
+ * Continued Integration support for services (testing, etc)
+ * More robust Admin
+ * Profiling system to gauge server and service speed
+ * Plugin system (easy adding of service types)

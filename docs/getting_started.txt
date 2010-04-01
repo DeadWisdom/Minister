@@ -1,0 +1,72 @@
+Startup Guide
+===============
+
+Minister is intensely easy to get started.
+
+.. warning::
+
+    Minister is currently in a very alpha stage. It is not fit for production
+    unless you know what you are doing.
+    
+First, clone the git repository::
+    
+    > git clone git://github.com/DeadWisdom/Minister.git
+    
+To run it from the development root, install eventlet and simplejson::
+
+    > easy_install eventlet simplejson
+    
+Then you can use the dev startup script to pretend minister is installed.
+``./dev`` acts just like the ``minister`` bin script from the repository root::
+
+    > cd Minister
+    > ./dev
+    Manager servering on http://0.0.0.0:8000
+    ^C
+    > ./dev --help
+    ...
+
+Minister uses a repository to save configuration and get services. The
+repository defaults to ``~/.minister`` unless you run as root, then it
+defaults to ``/var/minister``. To change it's path, use the ``--path`` command
+line option. For instance, to use the test repository::
+
+    > ./dev --path tests/repo
+    
+Now if you see errors, it's probably because you don't have php-cgi installed,
+which is fine.  That particular php service will automatically be disabled and
+you can ignore it.
+
+There is also a ``--debug`` mode, which is handy for development because it
+will give you a traceback on a 500 (internal server error), and a nice break
+down of available urls on a 404 (not found error)::
+
+    > ./dev -p tests/repo --debug
+
+And finally to see all of the log statements do ``--verbose``. These logs are
+normally sent to ``tests/repo/logs/minister.log``, but will now go to both the
+log file and your terminal::
+
+    > ./dev -p tests/repo -d --verbose
+    
+Thusly, for development I will often do::
+
+    > ./dev -dv -p tests/repo
+
+For production, you can enter daemon mode with ``--start``, and also set a 
+user to run as::
+
+    > sudo minister --start --user www-data
+    
+Now minister will be running in the background as a daemon process.  You can
+stop it with::
+
+    > sudo minister --stop
+
+Also, if you want to run minister on a different port or address one can do so
+by adding it as the first argument:
+
+    > minister localhost:8080
+    > minister 8080
+    > minister 0.0.0.0:81
+    > minister example.com:80

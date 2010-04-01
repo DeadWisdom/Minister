@@ -1,0 +1,109 @@
+Architecture Overview
+===========================
+
+Minister is devided into two "sides". One is the ``Manager`` class, found in
+``manager.py``, which acts as a manager of ``Service`` objects, and also the 
+front-end of the system, listening on the primary port (e.g. 80), and then 
+reverse proxying requests to the services.
+
+Services also have a duality, they exist within the primary process as a
+handle for the Manager, but they also manage their own secondary processes
+that the primary process proxies requests to. This decoupling allows a variety
+of services all in their own environment, keeping them from stepping on each
+other and allowing different environment configurations. The down-side to this
+is that, the processes generally take up more memory, but because the primary
+process takes up very little, as a whole the solution might take less. And it
+is supposed that the process decoupling has more benefit that the minor memory
+hit.
+
+It Begins
+--------------------------
+
+Minister starts up by running the function ``run()`` in ``manager.py``, which
+sets up the optparser, creates a ``Manager`` instance, and calls its
+``serve()`` method. Which has the manager gather and account for services, and
+then start its front-end listener on port 80, if run as root, or 8000
+otherwise.  The port and address to listen on can be configured by adding them
+as the first argument, like so::
+
+    > minister localhost:8080
+    > minister 8080
+    > minister 0.0.0.0:81
+    > minister example.com:80
+
+Manager Configuration
+---------------------------
+
+Minister needs a root directory to act in. By default it will use
+``~/.minister``, or if run as root, ``/var/minister``. This can be changed
+by using the ``--path`` command-line option.
+
+Within the root directory, Minister will create a ``config.json`` file.  This
+file contains options that are as yet undocumented, but are generally
+rather obvious.  There are two that I will note:
+
+The "services" option is an account of found services. This will, by default,
+have only the Admin service. Other services that minister finds in its
+``services`` directory will be placed here, and any options put into those 
+service objects will be applied to the service object itself.
+
+The "layout" option will be seen in many places including here. It defines
+resources found on the server that aren't services. This can be manual
+proxies, static file system servers, or many other kinds of resources (see
+:ref:`resources` below).
+
+Service Configuration
+-------------------------
+Within the root directory of minister, there is a directory named ``services``.
+Any directory dropped into it will be assumed to be an actual service as long
+as it has a ``deploy.json`` file within.  This tells minister to deploy said
+service.
+
+This json file is very similar to the Minister ``config.json``, and includes
+similar options, including the ``layout`` option, which describe resources
+belonging to the service.  There are two options that are required:
+
+   ``type`` 
+      Defines the service type. Possible values currently are "django",
+      "php", and "wsgi". They correspond to the Service classes in
+      ``minister/services``
+   
+   ``name``
+      Provides a name for the service to display on the minister Admin.
+
+.. _resources:
+ 
+Resources
+--------------------------
+
+Most classes in Minister are actually "Resources" and extend the ``Resource``
+class in the ``resource.py`` submodule. A resource is nothing more than a WSGI
+app that defines default properties via class-level attributes. They can also
+all be serialized via their ``simple()`` method. This allows them to be traded
+back and forth via json.  All resources have a ``url`` and ``site`` option
+that will allow them to receive requests.  For instance:
+
+    A request comes in to ``http://example.com/test/alpha``. Minister will
+    look through all of its resources in its layout. For each one it will
+    compare the resource's site to the incoming request, and then the
+    resource's url. If a resource's site is "example.com", or is a list
+    containing "example.com", or is "*", then it is a candidate for receiving
+    the request. Minister will then check the url of the resource to see if it
+    begins with the request. If so, then the resource is given the request.
+    
+    If nothing matches in the layout, each service is polled in the same way,
+    as services are also resources. If we have, for example, a service with a
+    site of ["example.com", "www.example.com"] and a url of "test" it would
+    get the request, and further process it, mostly likely by proxying the
+    request to one of its back-end processes.
+
+Service Tokens
+--------------------------
+
+The manager doesn't directly work with services, it actually works with
+``ServiceToken`` objects (``tokens.py``). Generally the user doesn't need to
+bother with the distinction, but tokens handle deployment, various settings,
+and importantly, the updating of the service source. By setting the "source"
+of a service to be an rsyncable directory, a git or hg repository, or some
+remote web tarball, the token will handle the downloading and installing of
+that source into the service directory.
