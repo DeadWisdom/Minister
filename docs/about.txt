@@ -8,19 +8,19 @@ expectations and assumptions.
 
 Minister has five primary goals:
 
-    * Make application deployment extremely simple.
-    * Separate applications into distinct environments.
-    * Monitor, restart, and scale applications automatically.
-    * Provide a web-resource for the server itself.
-    * Do all this with competitive speed and security.
+    * Make application deployment **extremely simple**.
+    * Separate applications into **distinct environments**.
+    * **Monitor, restart, and scale** applications automatically.
+    * Provide a **web-resource** for the server itself.
+    * Do all this with **competitive speed and security**.
 
 To do this, Minister starts up a front-end process, and then creates
 sub-processes for every application, which it then proxies requests to. It's a
 lot like using nginx in front of multiple web servers, except unlike nginx,
 Minister handles all the leg-work. Deploying a complex web application becomes
-as simple as making a quick configuration json file and dropping the source
-into a directory.
-
-For more details go on to :doc:`architecture`.
+as simple as making a quick configuration json file and dropping it into a 
+directory.
 
 To get a web application deployed quick, try the :doc:`getting_started`.
+
+For more technical details go on to the :doc:`architecture`.
