@@ -164,7 +164,7 @@ class Service(Resource):
     def shell(self, cmd):
         log = self._log
         args = shlex.split(cmd)
-        log.info("-", cmd)
+        log.info("- %s", cmd)
         popen = subprocess.Popen(list(args), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = popen.communicate()
         
