@@ -162,17 +162,16 @@ class Service(Resource):
             process.run()
     
     def shell(self, cmd):
-        log = self._log
-        args = shlex.split(cmd)
-        log.info("- %s", cmd)
+        self._log.info("- %s", str(cmd))
+        args = shlex.split(str(cmd))
         popen = subprocess.Popen(list(args), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = popen.communicate()
         
         if err:
-            log.error('    ' + '    \n'.join([line for line in err.split('\n')]))
+            self._log.error('    ' + '    \n'.join([line for line in err.split('\n')]))
             
         if out:
-            log.error('    ' + '    \n'.join([line for line in out.split('\n')]))
+            self._log.error('    ' + '    \n'.join([line for line in out.split('\n')]))
         
         return out or err
     

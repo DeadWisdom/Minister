@@ -12,5 +12,8 @@
         "timeout": 2,
         "interval": 2
     },
-    "priority": 1
+    "priority": 1,
+    "before_deploy": [
+        "ps -A"
+    ]
 }
