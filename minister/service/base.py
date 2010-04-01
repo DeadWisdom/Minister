@@ -171,10 +171,10 @@ class Service(Resource):
             out = None
         
         if err:
-            self._log.error('> %s\n%s', cmd, '... \n'.join([line for line in err.split('\n')]))
+            self._log.error('> %s\n%s', cmd, '\n...  '.join([line for line in err.split('\n')]))
             
         if out:
-            self._log.info('> %s\n%s', cmd, '... \n'.join([line for line in out.split('\n')]))
+            self._log.info('> %s\n%s', cmd, '\n...  '.join([line for line in out.split('\n')]))
         
         return out or err
     

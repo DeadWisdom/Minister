@@ -1,51 +1,132 @@
 Startup Guide
 ===============
 
-Minister is intensely easy to get started.
+It is easy to get minister up and running. Here is a quick tutorial for
+getting a simple WSGI app running with Minister.
 
 .. warning::
 
     Minister is currently in a very alpha stage. It is not fit for production
     unless you know what you are doing.
-    
-First, clone the git repository::
-    
-    > git clone git://github.com/DeadWisdom/Minister.git
-    
-To run it from the development root, install eventlet and simplejson::
 
-    > easy_install eventlet simplejson
-    
-Then you can use the dev startup script to pretend minister is installed.
-``./dev`` acts just like the ``minister`` bin script from the repository root::
+A Simple Tutorial
+-------------------
 
-    > cd Minister
+Let's install it in a virtual environment, so that we don't muck up our native
+python ``site-packages``.
+
+First make sure you have `pip installed <http://http://pip.openplans.org/>`_.
+We will create a `virtualenv <http://virtualenv.openplans.org/>`_ named
+``minister`` holding only what we need::
+
+    > pip install -E minister -e git+git://github.com/DeadWisdom/Minister.git#egg=minister
+
+This creates the new virtualenv, downloading, and installing minister and all
+required libraries (simplejson, greenlet, and eventlet). We can then run
+minister via the virtual env::
+
+    > minister/bin/minister
+
+You are now running minister. Checkout `http://localhost:8000 <http://localhost:8000>`_.
+Okay right, 404 Not Found. That's because there's nothing to find yet.  Except
+for the admin at `http://localhost:8000/minister/ <http://localhost:8000/minister/>`_.
+
+Currently there is only one service running, the admin itself.  Let's create
+a simple WSGI app, and drop it in.
+
+Minister uses a repository to store its log files and services. By default the
+repository is ``~/.minister`` or ``/var/minister`` if you run as root. This
+can be changed with the ``--path`` command-line option.
+
+Minister will look in ``<repository>/services`` for services and automatically
+deploy them. So we will create a new service directory named ``simple`` and
+the two files we need::
+
+    > mkdir ~/.minister/services/simple
+    > cd ~/.minister/services/simple
+    > touch serve.py
+    > touch deploy.json
+
+Now lets edit ``serve.py`` to make a simple WSGI app::
+
+    def app(environ, start_response):
+        start_response('200 OK', [])
+        return ("It worked!")
+
+And now we'll edit ``deploy.json`` to tell minister how to deploy our service::
+
+    {
+        "type": "wsgi",
+        "name": "Simple",
+        "site": "*",
+        "url": "simple/",
+        "app": "serve.app"
+    }
+
+This gives Minister some essential specifics:
+
+    ``"type": "wsgi"``
+        Minister, I command thee to assume my service is a WSGI app.  Other
+        options currently include "django", and "php", many more are planned.
+    
+    ``"name": "Simple"``
+        O Minister, I wish you to name my service "Simple".
+    
+    ``"site": "*"``
+        Minister!  You should allow all requests that come to any site-name.
+        I could also say "example.com", or ["www.example.com", "example.com"],
+        to restrict only to those domains, or ``null`` to stop all requests.
+        Apache calls these "VirtualHost" directives, for some reason.
+    
+    ``"url": "simple/"``
+        Minister of the Web, I desire you to only send requests to this service
+        if the url starts with "simple/".  If we wanted to make this the root
+        of our server, we would say ``"url": ""`` instead.
+    
+    ``"app": "serve.app"``
+        Minister, the WSGI process should use the function ``app`` in the 
+        python module ``serve`` as the WSGI application.
+
+If you haven't shut down minister: once we save, minister will detect that
+``deploy.json`` has updated and will deploy (or redeploy) the service.
+Otherwise once we start up again, it will automatically find and deploy the
+service. Now open your browser to `http://localhost:8000/simple/
+<http://localhost:8000/simple/>`_ and marvel at your wsgi process.
+
+We can also go back to `http://localhost:8000/minister/ <http://localhost:8000/minister/>`_ 
+and see the new WSGI service, automagically load balancing between two 
+processes.
+
+Finally, try out ``minister/bin/minister --help`` to see all sorts of options
+for running the server.
+
+Running in Development
+---------------------------
+
+If you want to hack on minister, the following will make your life easier.
+
+As long as you ``easy_install simplejson eventlet``, you can run minister
+from the source root through the simple ``dev`` python script::
+
     > ./dev
-    Manager servering on http://0.0.0.0:8000
-    ^C
-    > ./dev --help
-    ...
 
-Minister uses a repository to save configuration and get services. The
-repository defaults to ``~/.minister`` unless you run as root, then it
-defaults to ``/var/minister``. To change it's path, use the ``--path`` command
-line option. For instance, to use the test repository::
+To use the test repository do::
 
     > ./dev --path tests/repo
-    
-Now if you see errors, it's probably because you don't have php-cgi installed,
-which is fine.  That particular php service will automatically be disabled and
-you can ignore it.
+
+If you see errors after that, it's probably because you don't have php-cgi
+installed, which is fine. That particular php service will be disabled and you 
+can ignore it.
 
 There is also a ``--debug`` mode, which is handy for development because it
 will give you a traceback on a 500 (internal server error), and a nice break
-down of available urls on a 404 (not found error)::
+down of available resources on a 404 (not found error)::
 
     > ./dev -p tests/repo --debug
 
 And finally to see all of the log statements do ``--verbose``. These logs are
-normally sent to ``tests/repo/logs/minister.log``, but will now go to both the
-log file and your terminal::
+normally sent to ``<repository>/logs/minister.log``, but will now go to both
+the log file and your terminal::
 
     > ./dev -p tests/repo -d --verbose
     
@@ -53,20 +134,15 @@ Thusly, for development I will often do::
 
     > ./dev -dv -p tests/repo
 
+Running in Production
+-----------------------
+
 For production, you can enter daemon mode with ``--start``, and also set a 
 user to run as::
 
     > sudo minister --start --user www-data
-    
+
 Now minister will be running in the background as a daemon process.  You can
 stop it with::
 
     > sudo minister --stop
-
-Also, if you want to run minister on a different port or address one can do so
-by adding it as the first argument:
-
-    > minister localhost:8080
-    > minister 8080
-    > minister 0.0.0.0:81
-    > minister example.com:80
