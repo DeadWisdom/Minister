@@ -150,7 +150,11 @@ class Service(Resource):
         self.stop()
             
         if self.before_deploy:
-            self.shell(self.before_deploy)
+            if isinstance(self.before_deploy, basestring):
+                self.shell(self.before_deploy)
+            else:
+                for cmd in self.before_deploy:
+                    self.shell(cmd)
         
         for i in xrange(self.num_processes):
             process = Process(self.path, self.executable, self.args, self.get_environ(), self._log)
