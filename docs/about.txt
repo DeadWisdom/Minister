@@ -1,9 +1,9 @@
 About The Minister of Web Services
 ===================================
 
-Minister is a web-server that matches the needs of modern web development. 
+Minister is a web-server that fulfills the needs of modern web development. 
 Rarely do we have simple html files sitting in directories any more.  Today,
-applications are complex and dynamic yet our servers still adhere to old
+applications are complex and dynamic, but our servers still adhere to old
 expectations and assumptions.
 
 Minister has five primary goals:
@@ -14,7 +14,7 @@ Minister has five primary goals:
     * Provide a **web-resource** for the server itself.
     * Do all this with **competitive speed and security**.
 
-To do this, Minister starts up a front-end process, and then creates
+To do this, Minister starts up a front-end process and then creates
 sub-processes for every application, which it then proxies requests to. It's a
 lot like using nginx in front of multiple web servers, except unlike nginx,
 Minister handles all the leg-work. Deploying a complex web application becomes

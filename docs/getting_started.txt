@@ -19,7 +19,8 @@ First make sure you have `pip installed <http://http://pip.openplans.org/>`_.
 We will create a `virtualenv <http://virtualenv.openplans.org/>`_ named
 ``minister`` holding only what we need::
 
-    > pip install -E minister -e git+git://github.com/DeadWisdom/Minister.git#egg=minister
+    > pip install -E minister -e \
+        git+git://github.com/DeadWisdom/Minister.git#egg=minister
 
 This creates the new virtualenv, downloading, and installing minister and all
 required libraries (simplejson, greenlet, and eventlet). We can then run
