@@ -9,8 +9,8 @@ except ImportError:
 class MutableFile(object):
     def __init__(self, path):
         self.path = path
-        self.mtime = os.stat(path).st_mtime
-        self.cache = open(self.path).read()
+        self.mtime = -1
+        self.read()
     
     def is_stale(self):
         try:
@@ -24,7 +24,11 @@ class MutableFile(object):
     
     def read(self):
         if self.is_stale():
-            self.cache = open(self.path).read()
+            file = open(self.path)
+            try:
+                self.cache = file.read()
+            finally:
+                file.close()
         return self.cache
 
 def system(path, cmd, args):

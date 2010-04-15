@@ -7,7 +7,6 @@ import fastcgi
 
 from eventlet.green import socket
 from minister.static import Static
-from minister.http import Http404
 
 class Service(fastcgi.Service):
     type = 'php'

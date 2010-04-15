@@ -7,9 +7,8 @@ As this constitutes a "substantial portion", WSGIProxy Contains the following no
 """
 
 import eventlet, socket
+from minister import http
 from resource import Resource
-from http import Http502
-#import http as httplib
 from eventlet.green import httplib
 from urllib import quote as url_quote
 
@@ -69,7 +68,7 @@ class Proxy(Resource):
             conn.request(environ['REQUEST_METHOD'], path, body, headers)
         except socket.error, exc:
             if exc.args[0] == -2:
-                return Http502(environ, start_response)
+                return http.BadGateway()(environ, start_response)
             raise
         res = conn.getresponse()
         headers_out = parse_headers(res.msg)

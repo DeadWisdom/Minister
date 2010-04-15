@@ -15,33 +15,29 @@ template = """<html><head>
 def render(title, msg=''):
     return simple_template(template, {'title': title, 'msg': msg})
 
-def HttpResponse(environ, start_response, content='', headers=None, type='text/html'):
+def Response(content='', headers=None, type='text/html', status="200 OK"):
     headers = headers or [('Content-Type', type)]
-    start_response("200 OK", headers)
-    if isinstance(content, basestring):
-        return (content,)
-    return content
-
-def Http301(environ, start_response, uri):
-    start_response('301 Moved Permanently', [('Location', uri)])
-    return ("",)
-
-def Http304(environ, start_response, headers=None):
-    start_response('304 Not Modified', headers or [])
-    return ("",)
-
-def Http404(environ, start_response, msg="404 Not Found"):
-    start_response('404 Not Found', [])
-    return render('404 Not Found')
-
-def Http405(environ, start_response, allowed=[]):
-    start_response('405 Method Not Allowed', [('Allow', " ,".join(allowed))])
-    return ("",)
+    def app(environ, start_response):
+        start_response(status, headers)
+        if isinstance(content, basestring):
+            return (content,)
+        return content
+    return app
     
-def Http500(environ, start_response):
-    start_response('500 Internal Server Error', [])
-    return render("500 Internal Server Error")
-    
-def Http502(environ, start_response):
-    start_response('502 Bad Gateway', [])
-    return render('502 Bad Gateway', "Name or service not known, bad domain name: %s" % environ['SERVER_NAME'])
+def MovedPermanently(uri, headers=[]):
+    return Response(status='301 Moved Permanently', headers=headers + [('Location', uri)])
+
+def NotModified(headers=[]):
+    return Response(status='304 Not Modified', headers=headers)
+
+def NotFound(content=render("404 Not Found")):
+    return Response(status='404 Not Found', content=content)
+
+def MethodNotAllowed(allowed=[]):
+    return Response(status='405 Method Not Allowed', headers=[('Allow', " ,".join(allowed))])
+
+def InternalServerError(content=render("500 Internal Server Error")):
+    return Response(status="500 Internal Server Error", content=content)
+
+def BadGateway(content=render('502 Bad Gateway', "Name or service not known, bad domain name.")):
+    return Response(status="502", content=content)

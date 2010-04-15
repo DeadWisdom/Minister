@@ -1,6 +1,9 @@
 import traceback, os, re
 from util import simple_template, error_info
 
+import logging
+logger = logging.getLogger('minister')
+
 template_base = """<html><head>
 <title>{{title}}</title>
 <style>
@@ -27,56 +30,60 @@ template_base = """<html><head>
 
 url_template = """<div class='url'><a href="{{site}}/{{url}}">{{site}}/{{url}}</a></div>"""
 
-def HttpDebug404(environ, start_response, manager):
-    urls = []
-    if manager.address[1] != '80':
-        port = ":%s" % manager.address[1]
-    else:
-        port = ""
-        
-    for resource in manager.layout.resources:
-        if resource.site:
-            site = "http://" + resource.site + port
+def DebugNotFound(manager):
+    def app(environ, start_response):
+        urls = []
+        if manager.address[1] != '80':
+            port = ":%s" % manager.address[1]
         else:
-            site = ""
-        urls.append( simple_template(url_template, {'url': resource.url, 'site': site}) )
+            port = ""
+        
+        for resource in manager.layout.resources:
+            if resource.site:
+                site = "http://" + resource.site + port
+            else:
+                site = ""
+            urls.append( simple_template(url_template, {'url': resource.url, 'site': site}) )
     
-    for resource in manager.services.resources:
-        if resource.status not in ("active", "struggling"):
-            continue
-        if resource._service.disabled or resource.disabled:
-            continue
+        for resource in manager.services.resources:
+            if resource.status not in ("active", "struggling"):
+                continue
+            if resource._service.disabled or resource.disabled:
+                continue
             
-        url = resource._service.url
-        if url is None:
-            continue
+            url = resource._service.url
+            if url is None:
+                continue
         
-        if resource._service.site not in ('*', None):
-            site = "http://" + resource._service.site + port
-        else:
-            site = ""
-        urls.append( simple_template(url_template, {'url': url, 'site': site}) )
+            if resource._service.site not in ('*', None):
+                site = "http://" + resource._service.site + port
+            else:
+                site = ""
+            urls.append( simple_template(url_template, {'url': url, 'site': site}) )
     
-    start_response('404 Not Found', [])
-    return simple_template(template_base, {
-        'title': '404 Not Found',
-        'list': "\n".join(urls),
-        'byline': 'Available Resources'
-    })
+        start_response('404 Not Found', [])
+        return simple_template(template_base, {
+            'title': '404 Not Found',
+            'list': "\n".join(urls),
+            'byline': 'Available Resources'
+        })
+    return app
 
 
 traceback_template = """<div class='frame'>
     <div class='short'>{{short}}</div><div class='filename'>{{filename}}</div> &mdash; line {{lineno}}
     <pre>{{src}}</pre>"""
 
-def HttpDebug500(environ, start_response, exc):
-    exc_type, exc_value, tb = exc
-    start_response('500 Internal Server Error', [])
-    return simple_template(template_base, {
-        'title': '500 Internal Server Error',
-        'list': "\n".join(get_frames(tb)),
-        'byline': "%s: %s" % (exc_type.__name__, exc_value)
-    })
+def DebugInternalServerError(exception):
+    def app(environ, start_response):
+        exc_type, exc_value, tb = exception
+        start_response('500 Internal Server Error', [])
+        return simple_template(template_base, {
+            'title': '500 Internal Server Error',
+            'list': "\n".join(get_frames(tb)),
+            'byline': "%s: %s" % (exc_type.__name__, exc_value)
+        })
+    return app
 
 def get_frames(tb):
     frames = []

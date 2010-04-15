@@ -1,7 +1,7 @@
 import os, mimetypes, rfc822, time
 from urllib import quote
 from resource import Resource
-from http import Http404, Http304, Http405, Http301
+from minister import http
 
 class Static(Resource):
     type = 'static'
@@ -17,17 +17,17 @@ class Static(Resource):
     def __call__(self, environ, start_response):
         """Respond to a request when called in the usual WSGI way."""
         if self.allow is not None and environ['REQUEST_METHOD'] not in self.allow:
-            return Http405(environ, start_response, self.allow)
+            return http.MethodNotAllowed(self.allow)(environ, start_response)
         
         requested_path = environ.get('PATH_INFO', '')
         path = self.find_real_path(environ.get('SERVICE_PATH', ''), requested_path)
         
         if not path:
-            return Http404(environ, start_response)
+            return http.NotFound()(environ, start_response)
         
         for e in self.exclude:
             if path.endswith('/%s' % e):
-                return Http404(environ, start_response)
+                return http.NotFound()(environ, start_response)
                 
         if os.path.isdir(path):
             if requested_path == '' or requested_path.endswith('/'):
@@ -36,7 +36,7 @@ class Static(Resource):
                     return self.dir_listing(environ, start_response, path)
                 environ['PATH_INFO'] = requested_path + index
             else:
-                return Http301(environ, start_response, self.corrected_dir_uri(environ))
+                return http.MovedPermanently(self.corrected_dir_uri(environ))(environ, start_response)
         
         try:
             ext = path.rsplit('.', 1)[1]
@@ -62,7 +62,7 @@ class Static(Resource):
         """Serve the file at path."""
         
         if not os.path.exists(path):
-            return Http404(environ, start_response)
+            return http.NotFound()(environ, start_response)
             
         try:
             if self.volatile:
@@ -78,12 +78,12 @@ class Static(Resource):
             if (not self.volatile and if_modified_since):
                 parsed = rfc822.parsedate(rfc822.formatdate(modified))
                 if parsed >= rfc822.parsedate(if_modified_since):
-                    return Http304(environ, start_response, headers)
+                    return http.NotModified(headers)(environ, start_response)
             
             if_none_matched = environ.get('HTTP_IF_NONE_MATCH', None)
             if (not self.volatile and if_none_matched):
                 if if_none_matched == '*' or if_none_matched == str(modified):
-                    return Http304(environ, start_response, headers)
+                    return http.NotModified(headers)(environ, start_response)
             
             content_type = mimetypes.guess_type(path)[0] or self.default_type
             headers.append(('Content-Type', content_type))
@@ -93,7 +93,7 @@ class Static(Resource):
             else:
                 return ('',)
         except (IOError, OSError), e:
-            return Http404(environ, start_response)
+            return http.NotFound()(environ, start_response)
     
     def set_handler(self, ext, func):
         self._handlers[ext] = func
@@ -119,7 +119,7 @@ class Static(Resource):
     
     def dir_listing(self, environ, start_response, path):
         """The client is requesting a directory with no index."""
-        return Http404(environ, start_response)
+        return http.NotFound()(environ, start_response)
     
     def corrected_dir_uri(self, environ):
         """Changes the path request to /path/to/directory into /path/to/directory/"""

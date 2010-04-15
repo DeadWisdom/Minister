@@ -286,7 +286,7 @@ class Process(object):
                 line = self._process.stderr.readline()
                 if not line:
                     return
-                self.logger.error(line[:-1])
+                self.logger.info(line[:-1])
         eventlet.spawn_n(outloop)
         eventlet.spawn_n(errloop)
     

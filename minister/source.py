@@ -162,8 +162,10 @@ class HttpSource(Source):
                 raise RuntimeError("Unknown file type: %r" % tmpfile)
             
             archive = tarfile.open(fileobj=tmpfile, mode=mode)
-            archive.extractall(path=path, members=self.tar_members(archive))
-            archive.close()
+            try:
+                archive.extractall(path=path, members=self.tar_members(archive))
+            finally:
+                archive.close()
         
         return True
     

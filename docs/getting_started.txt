@@ -68,14 +68,14 @@ This gives Minister some essential specifics:
 
     ``"type": "wsgi"``
         Minister, I command thee to assume my service is a WSGI app.  Other
-        options currently include "django", and "php", many more are planned.
+        options currently include "django", and "php".  Many more are planned.
     
     ``"name": "Simple"``
         O Minister, I wish you to name my service "Simple".
     
     ``"site": "*"``
         Minister!  You should allow all requests that come to any site-name.
-        I could also say "example.com", or ["www.example.com", "example.com"],
+        I could also say ``"example.com"``, or ``["www.example.com", "example.com"]``,
         to restrict only to those domains, or ``null`` to stop all requests.
         Apache calls these "VirtualHost" directives, for some reason.
     

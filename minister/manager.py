@@ -5,18 +5,19 @@ from eventlet import wsgi
 from eventlet.green import socket
 
 import daemon
-from http import Http404, Http500
+from http import NotFound, InternalServerError
+from debug import DebugNotFound, DebugInternalServerError
 from resource import Resource
 from tokens import ServiceToken
 from service import Service
 from util import json, fix_unicode_keys, get_logger, FileLikeLogger
-from debug import HttpDebug500, HttpDebug404
+
 
 class Manager(Resource):
     type = 'manager'
     path = None
     layout = None
-    services = None
+    services = []
     debug = False
     address = None
     
@@ -52,16 +53,15 @@ class Manager(Resource):
     
     def save(self):
         file = open(os.path.join(self.path, 'config.json'), 'w')
-        json.dump(self.simple(), file)
+        try:
+            json.dump(self.simple(), file)
+        finally:
+            file.close()
     
     def close(self):
         while self._threads:
             eventlet.kill( self._threads.pop() )
-        if self._socket:
-            try:
-                self._socket.shutdown()
-            except:
-                pass
+        self._socket = None
         for token in self.services.resources:
             try:
                 token.withdraw()
@@ -71,7 +71,7 @@ class Manager(Resource):
     @classmethod
     def listen(cls, address):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(address)
         sock.listen(500)
         return sock
@@ -101,7 +101,10 @@ class Manager(Resource):
             
             print "Manager servering on http://%s:%s" % self.address
             self._log.info("manager serving on http://%s:%s", *self.address)
+            print "Loading..."
             wsgi.server(self._socket, self, log=FileLikeLogger('minister'))
+        except Exception, e:
+            raise e
         finally:
             self.close()
         
@@ -119,22 +122,21 @@ class Manager(Resource):
             if response is not None:
                 return response
         except:
-            exc = sys.exc_info()
             if self.debug:
-                return HttpDebug500(environ, start_response, exc)
+                return DebugInternalServerError(sys.exc_info())(environ, start_response)
             else:
-                return Http500(environ, start_response)
+                return InternalServerError()(environ, start_response)
         
         if self.debug:
-            return HttpDebug404(environ, start_response, self)
+            return DebugNotFound(self)(environ, start_response)
         else:
-            return Http404(environ, start_response)
+            return NotFound()(environ, start_response)
     
     def periodically(self, method, interval=1):
         def loop():
             while True:
-                eventlet.sleep(interval)
                 method()
+                eventlet.sleep(interval)
         self._threads.append( eventlet.spawn(loop) )
     
     def update(self):
@@ -261,6 +263,7 @@ def run():
         sys.stderr.write("Path to minister root does not exist: %s\n" % options.path)
         sys.exit(0)
 
+    file = None
     try:
         file = open(os.path.join(options.path, 'config.json'))
         config = fix_unicode_keys( json.load( file ) )
@@ -268,6 +271,8 @@ def run():
         config = {
             'services': [{'type': 'admin', 'path': '@admin'}],
         }
+    finally:
+        if file: file.close()
     
     config['path'] = options.path
     if options.verbose:
@@ -301,5 +306,4 @@ def run():
     manager = Manager(**config)
     atexit.register(manager.close)
     manager.serve(address)
-    
     

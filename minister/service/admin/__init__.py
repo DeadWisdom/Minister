@@ -1,8 +1,8 @@
 import os, simplejson
 
+from minister import http
 from minister.resource import Resource, Layout, App
 from minister.static import Static
-from minister.http import HttpResponse
 from minister.util import MutableFile, simple_template
 
 from minister.service import base
@@ -46,7 +46,8 @@ class Service(base.Service):
         return self.layout(environ, start_response)
     
     def main(self, environ, start_response):
-        return HttpResponse(environ, start_response, content=simple_template(self._index.read(), {'url': '/%s' % self.url}))
+        environ['_content'] = simple_template(self._index.read(), {'url': '/%s' % self.url})
+        return http.Response()(environ, start_response)
     
     def services(self, environ, start_response):
         path = environ['PATH_INFO']
@@ -57,7 +58,7 @@ class Service(base.Service):
                 services.append(token.info())
             services.sort(key=lambda x: x.get('name', '-'))
             content = simplejson.dumps(services)
-            return HttpResponse(environ, start_response, content=content, type='text/javascript')
+            return http.Response(content=content, type='text/javascript')(environ, start_response)
     
     def simple(self):
         return Resource.simple(self)
