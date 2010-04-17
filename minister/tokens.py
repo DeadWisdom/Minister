@@ -129,26 +129,33 @@ class ServiceToken(object):
             options = self.load_options().copy()
             options['_manager'] = self.manager
             options['_logger'] = self.log
-            
-            if not options.get('type'):
-                self.status = "mia"
-                self.status_info = "Service type not found."
-                self.log.error("Service lacks service type: %s", self.path)
-                return
-            
-            cls = Resource.get_class(options['type'])
+        except Exception, e:
+            if self.status == 'deploying':
+                self.status = 'failed'
+                self.status_info = "Error in deployment."
+            return
+        
+        if not options.get('type'):
+            self.status = "mia"
+            self.status_info = "Service type not found."
+            self.log.error("Service lacks service type: %s", self.path)
+            return
+        
+        cls = Resource.get_class(options['type'])
+        if cls is None:
+            cls = Resource.get_class(options['type'] + ":service")
             if cls is None:
-                cls = Resource.get_class(options['type'] + ":service")
-                if cls is None:
-                    self.status = "failed"
-                    self.status_info = "Cannot find service type: %s" % options['type']
-                    self.log.error(self.status_info)
-                    return
-                else:
-                    options['type'] = options['type'] + ':service'
-            
+                self.status = "failed"
+                self.status_info = "Cannot find service type: %s" % options['type']
+                self.log.error(self.status_info)
+                return
+            else:
+                options['type'] = options['type'] + ':service'
+        
+        try:
             self.service = Resource.create(options)
         except Exception, e:
+            self.log.exception(e)
             if self.status == 'deploying':
                 self.status = 'failed'
                 self.status_info = "Error in deployment."

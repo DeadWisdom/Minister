@@ -142,6 +142,7 @@ class Manager(Resource):
                     environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + requested_path[:len(requested_path)-len(delta)]
                     environ['PATH_INFO'] = delta
                     return service(environ, start_response)
+                    
         except Exception, e:
             if self.debug:
                 return DebugInternalServerError(sys.exc_info())(environ, start_response)
