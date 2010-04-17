@@ -1,17 +1,17 @@
 #!/usr/bin/python
 import sys
 from unittest import TestCase
-from test_resource import TestManager as ResourceTestManager
+from test_resource import TestResource
 from minister.resource import Resource
 from minister.debug import DebugNotFound, DebugInternalServerError
 
 class MockManager(object):
     def __init__(self, address):
-        self.layout = Resource.create([])
+        self.resources = Resource.create([])
         self.services = Resource.create([])
         self.address = address
 
-class TestManager(ResourceTestManager):
+class TestManager(TestResource):
     manager = MockManager(('test_debug', '80'))
     
     def test_404(self):

@@ -11,7 +11,7 @@ def mock_start_response(result):
         result['headers'] = headers
     return start_response
 
-class TestManager(TestCase):
+class TestResource(TestCase):
     repo_path = os.path.join(__file__, '..', 'repo')
 
     def mock_request(self, resource, **envvars):

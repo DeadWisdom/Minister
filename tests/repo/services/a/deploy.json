@@ -4,15 +4,10 @@
     "app": "serve.app",
     "url": "a/",
     "site": "*",
-    "layout": [
+    "virtualenv": null,
+    "resources": [
         {"type": "simple", "url": "simple", "content": "Simple Resource A"}
     ],
-    "health": {
-        "url": "health",
-        "timeout": 2,
-        "interval": 2
-    },
-    "priority": 1,
     "before_deploy": [
         "sh shellscript.sh"
     ]

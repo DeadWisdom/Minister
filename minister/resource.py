@@ -26,7 +26,6 @@ class Resource(object):
     type = 'resource'
     url = None          # Accepts no url
     site = '*'          # Accepts any site
-    priority = 0
     disabled = False
     _manager = None
     
@@ -110,9 +109,6 @@ class Layout(Resource):
     type = 'layout'
     resources = []
     
-    def init(self):
-        self.sort()
-    
     def __call__(self, environ, start_response):
         requested_path = environ.get('PATH_INFO', '')
         hostname, _, _ = environ.get('HTTP_HOST').partition(":")
@@ -129,15 +125,20 @@ class Layout(Resource):
     
     def add(self, resoures):
         self.resources += list(resoures)
-        self.sort()
-    
-    def sort(self):
-        self.resources.sort(key=lambda x: x.priority, reverse=True)
 
 class ListLayout(Layout):
     """ Like a layout, but simplifies to a list. """
     def simple(self):
         return [o.simple() for o in self.resources]
+    
+    def __getitem__(self, i):
+        return self.resources[i]
+    
+    def __getslice__(self, *a):
+        return self.resources.__getslice__(*a)
+    
+    def __iter__(self):
+        return self.resources.__iter__()
 
 class App(Resource):
     """Turns any app into a resource."""

@@ -1,7 +1,7 @@
 import os, simplejson
 
 from minister import http
-from minister.resource import Resource, Layout, App
+from minister.resource import Resource, App
 from minister.static import Static
 from minister.util import MutableFile, simple_template
 
@@ -12,12 +12,12 @@ MEDIA_PATH = os.path.abspath(
 )
 
 class Service(base.Service):
-    type = "admin"
+    type = "admin:service"
     url = 'minister/'
     site = '*'
-    layout = Layout(resources=[
+    resources = [
         Static(url='static/', root=MEDIA_PATH, exclude=['index.html'], volatile=True),
-    ])
+    ]
     path = "@admin"
     name = "Admin"
     
@@ -43,18 +43,18 @@ class Service(base.Service):
         if path.startswith('services/'):
             environ['PATH_INFO'] = environ['PATH_INFO'][len('services/'):]
             return self.services(environ, start_response)
-        return self.layout(environ, start_response)
+        return self.resources(environ, start_response)
     
     def main(self, environ, start_response):
-        environ['_content'] = simple_template(self._index.read(), {'url': '/%s' % self.url})
-        return http.Response()(environ, start_response)
+        content = simple_template(self._index.read(), {'url': '/%s' % self.url})
+        return http.Response(content=content)(environ, start_response)
     
     def services(self, environ, start_response):
         path = environ['PATH_INFO']
         if path == '*.json':
             root = os.path.abspath( self._manager.path )
             services = []
-            for token in self._manager._tokens.values():
+            for token in self._manager.services:
                 services.append(token.info())
             services.sort(key=lambda x: x.get('name', '-'))
             content = simplejson.dumps(services)

@@ -1,4 +1,4 @@
-import eventlet
+import eventlet, logging
 
 try:
     import json
@@ -13,158 +13,177 @@ from source import Source
 from util import MutableFile, fix_unicode_keys
 
 TOKEN_STATES = {
-    "updating":         "Awaiting deployment, as the source updates.",
+    "updating":         "Awaiting deployment; the source is updating.",
     "deploying":        "In the process of being deployed.",
     "redeploying":      "In the process of being redeployed.",
     "withdrawing":      "In the process of being withdrawn.",
-    "active":           "Actively deployed, things are running smoothly.",
+    "active":           "Actively deployed; things are running smoothly.",
     "struggling":       "Deployed but some processes have failed and cannot restart.",
-    "failed":           "Deployment failed, all processes have failed and cannot restart.",
-    "disabled":         "Purposefully not deployed, as per the 'disabled' setting.",
-    "mia":              "Cannot Deploy, as deployment source is missing.",
+    "failed":           "Deployment failed; all processes have failed and cannot restart.",
+    "disabled":         "Purposefully not deployed; per the 'disabled' setting.",
+    "mia":              "Cannot deploy; deployment source is missing.",
 }
 
-class ServiceToken(Resource):
-    ### Initialization ###
-    def __init__(self, properties=None):
-        self.properties = properties
-        self.properties['path'] = properties.get('path')
+class ServiceToken(object):
+    """
+    A ServiceToken acts as a broker, keeping track of a service, deploying it, 
+    loading it, etc.
+    """
+
+    def __init__(self, manager, path, override=None):
+        self.path = path
+        self.slug = os.path.basename( os.path.abspath(path) ) or path
+        self.manager = manager
+        self.service = None
+        self.threads = []
+        self.status = "failed"
+        self.status_info = ""
+        self.source = None
+        self.deploy_file = None
+        self.override = override or {}
+        self.override['path'] = self.path
+        self.deploy_options = self.override.copy()
+        self.deploy_file = None
         
-        self._service = None
-        self._threads = []
-        self._status = "building"
-        self._extra = ""
-        self._config = None
-        self._config_file = None
-        self._manager = None
+    ### Options ###
+    def __getitem__(self, k):
+        if k in self.override:
+            return self.override[k]
+        if self.service:
+            return getattr(self.service, k)
+        elif self.deploy_options:
+            return self.deploy_options[k]
+        raise IndexError(k)
         
-        src = self.properties.get('src')
-        if src:
-            type, _, src = src.partition(":")
-            self._source = Source(type=type, src=src)
-        else:
-            self._source = None
+    def get(self, k, default=None):
+        if k in self.override:
+            return self.override[k]
+        elif self.deploy_options:
+            return self.deploy_options.get(k, default)
     
-    ### Properties ###
-    def get_status(self):
-        return self._status[0]
-    def set_status(self, status):
-        if isinstance(status, basestring):
-            status = (status, '')
-        self._status = status
-    status = property(get_status, set_status)
-    
-    def get_extra(self):
-        return self._extra
-    def set_extra(self, extra):
-        self._extra = extra
-    extra = property(get_extra, set_extra)
-    
+    def __setitem__(self, k, v):
+        self.override[k] = v
+        
     @property
-    def slug(self):
-        slug = os.path.basename( os.path.abspath(self.properties.get('path', '')) )
-        if slug:
-            return slug
-        else:
-            return self.properties.get('path')
-    
-    @property
-    def priority(self):
-        if (self._service):
-            return self._service.priority
-        return self.properties.get('priority', 0)
-    
-    @property
-    def path(self):
-        return self.properties['path']
-    
+    def disabled(self):
+        return self.get('disabled')
+        
     ### Methods ###
+    def load_options(self):
+        if self.path.startswith('@'):
+            self.deploy_options = self.override
+            return self.deploy_options
+            
+        path = os.path.join( self.path, 'deploy.json' )
+        if self.deploy_file and not self.deploy_file.is_stale():
+            self.deploy_options.update( self.override )
+            return self.deploy_options
+        if os.path.exists(path):
+            try:
+                self.deploy_file = MutableFile(path)
+                self.deploy_options = fix_unicode_keys( json.load(self.deploy_file) )
+            except Exception, e:
+                logging.error("Bad deploy.json - %s: %s" % (path, e))
+                self.deploy_file = None
+                self.deploy_options = {}
+                self.status = "failed"
+                self.status_info = "Bad deploy.json"
+                raise
+        else:
+            self.deploy_file = None
+            self.deploy_options = {}
+            self.status = "mia"
+            self.status_info = "Path doesn't exist."
+            raise RuntimeError("Path does not exist: %s" % path )
+        self.deploy_options.update( self.override )
+        return self.deploy_options
+    
     def deploy(self):
-        if self._service:
+        if self.service:
             return
-        self._threads.append( eventlet.spawn(self._deploy) )
+        self.threads.append( eventlet.spawn(self._deploy) )
         self.status = 'deploying'
+        self.status_info = ""
     
     def _deploy(self):
-        if self.disabled:
+        if self.deploy_options.get('disabled'):
             self.status = 'disabled'
             return
         
         self.status = 'updating'
-        if self._source is not None:    
-            if not self._source.update(self.path):
+        if not self.source:
+            source = self.get('source')
+            if source:
+                typ, _, src = source.partition(":")
+                self.source = Source(type=typ, src=src)
+        
+        if self.source:
+            if not self.source.update(self.path):
                 self.status = 'mia'
                 return
         
         self.status = "deploying"
         
         try:
-            config = {}
-            config.update(self.load_config())
-            config.update(self.properties)
-            config['_manager'] = self._manager
-            config['slug'] = self.slug
+            options = self.load_options().copy()
+            options['_manager'] = self.manager
+            options['_logger'] = logging
             
-            if not config.get('type'):
+            if not options.get('type'):
                 self.status = "mia"
-                self._manager._log.error("Cannot find service: %s", self.path)
+                self.status_info = "Service type not found."
+                logging.error("Service lacks service type: %s", self.path)
                 return
             
-            self._service = Resource.create(config)
+            cls = Resource.get_class(options['type'])
+            if cls is None:
+                cls = Resource.get_class(options['type'] + ":service")
+                if cls is None:
+                    self.status = "failed"
+                    self.status_info = "Cannot find service type: %s" % options['type']
+                    logging.error(self.status_info)
+                    return
+                else:
+                    options['type'] = options['type'] + ':service'
+            
+            self.service = Resource.create(options)
         except Exception, e:
-            self._manager._log.exception(e)
+            if self.status == 'deploying':
+                self.status = 'failed'
+                self.status_info = "Error in deployment."
+            return
         
-        if self._service.disabled:
+        if self.service.disabled:
             self.status = 'disabled'
         else:
-            self._service.start()
+            self.service.start()
         
-        self._threads.append( eventlet.spawn(self._check_status_loop) )
-        if (self._service.health):
-            #print "Health Checker engaged [timeout: %r, interval: %r]" % (self._service.health.get('interval', 30), self._service.health.get('timeout', 10))
-            self._threads.append( eventlet.spawn(self._check_health_loop, self._service.health.get('interval', 30)) )
-        self._threads.remove( eventlet.getcurrent() )
-        
-        self._manager.services.sort()
+        self.threads.append( eventlet.spawn(self._status_loop) )
+        self.threads.remove( eventlet.getcurrent() )
     
     def match_path(self, path):
-        if not self._service:
-            raise RuntimeError("Token not deployed.")
-        return self._service.match_path(path)
+        if not self.service:
+            raise RuntimeError("Service not deployed.")
+        return self.service.match_path(path)
     
     def match_site(self, hostname):
-        if not self._service:
-            raise RuntimeError("Token not deployed.")
-        return self._service.match_site(hostname)
+        if not self.service:
+            raise RuntimeError("Service not deployed.")
+        return self.service.match_site(hostname)
     
     def check_source(self):
-        if self._source:
-            return self._source.check(self.path)
+        if self.source:
+            return self.source.check(self.path)
         return True
-        
+    
     def is_valid(self):
-        config = self.load_config()
-        if config.get('type', None):
-            return True
-        return False
+        try:
+            options = self.load_options()
+        except Exception, e:
+            self.status = "failed"
+            return False
             
-    def load_config(self):
-        path = os.path.join( self.properties.get('path'), 'deploy.json' )
-        if os.path.exists(path):
-            try:
-                self._config_file = MutableFile(path)
-                self._config = fix_unicode_keys( json.load(self._config_file) )
-                if not self.type:
-                    self.type = self._config.get('type', None)
-            except Exception, e:
-                self._manager._log.exception(e)
-                self._config_file = None
-                self._config = {}
-            return self._config
-        else:
-            self._config_file = None
-            self._config = {}
-            return self._config
+        return (options.get('type', None) is not None)
     
     def withdraw(self):
         self.status = "withdrawing"
@@ -172,48 +191,49 @@ class ServiceToken(Resource):
         self.status = 'disabled'
     
     def _withdraw(self):
-        if self._threads:
-            for g in self._threads:
+        if self.threads:
+            for g in self.threads:
                 if g is not eventlet.getcurrent():
-                    self._threads.remove(g)
+                    self.threads.remove(g)
                     eventlet.kill(g)
         
-        if self._service:
-            self._service.stop()
-            self._service = None
+        if self.service:
+            self.service.stop()
+            self.service = None
         
     def redeploy(self):
         self.status = 'redeploying'
         self._withdraw()
         self.deploy()
     
-    def _check_status_loop(self, interval=0.5):
+    def _status_loop(self, interval=0.5):
         while True:
             try:
-                if self._config_file and self._config_file.is_stale():
-                    self._manager._log.info("reloading service: %s", self.properties.get('path'))
+                if self.deploy_file and self.deploy_file.is_stale():
+                    logging.info("reloading service: %s", self.path)
                     return self.redeploy()
-                self.status = self._service.check_status()
+                healthy, info = self.service.get_health()
+                if not healthy:
+                    self.status = "failed"
+                else:
+                    self.status = "active"
+                    self.status_info = info
             except Exception, e:
-                self._manager._log.exception(e)
+                logging.exception(e)
             eventlet.sleep(interval)
-    
-    def _check_health_loop(self, interval=30):
-        while True:
-            eventlet.sleep(interval)
-            try:
-                self._service.check_health()
-            except Exception, e:
-                self._manager._log.exception(e)
     
     def info(self):
-        if (self._service):
-            info = self._service.simple()
+        if (self.service):
+            info = self.service.simple()
         else:
-            info = self.simple()
-        info['status'], info['statusText'] = self._status
-        info['statusDescription'] = TOKEN_STATES.get(self.status, '')
-        info['name'] = info.get('name', os.path.basename(info['path']))
+            info = self.deploy_options.copy()
+        info['status'] = self.status
+        if self.status_info != self.status:
+            info['statusText'] = self.status_info
+        info['name'] = info.get('name', self.slug)
+        info['slug'] = self.slug
+        info['path'] = self.path
+        info['type'] = info.get('type', 'unknown').replace(':service', '')
         return info
     
     def remove(self):
@@ -223,8 +243,8 @@ class ServiceToken(Resource):
         shutil.rmtree(self.path, True)
     
     def simple(self):
-        return self.properties.copy()
+        return self.override.copy()
     
     def __call__(self, environ, start_response):
-        return self._service(environ, start_response)
+        return self.service(environ, start_response)
         

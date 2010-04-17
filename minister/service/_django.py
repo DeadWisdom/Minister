@@ -1,12 +1,12 @@
 import os, sys
 import base
 
-class Service(base.Service):
-    type = 'django'
+class Service(base.PythonService):
+    type = 'django:service'
     name = "Django Service"
     settings = 'settings'
     args = [__file__]
-    requires = base.Service.requires + ['django']
+    requires = base.PythonService.requires + ['django']
     
     def get_environ(self):
         env = super(Service, self).get_environ()

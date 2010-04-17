@@ -1,10 +1,12 @@
-import os, traceback, sys, re
+import os, traceback, sys, re, shlex
 import logging, logging.handlers
+from eventlet.green import subprocess
 
 try:
     import json
 except ImportError:
     import simplejson as json
+    
 
 class MutableFile(object):
     def __init__(self, path):
@@ -31,6 +33,12 @@ class MutableFile(object):
                 file.close()
         return self.cache
 
+def path_insert(dct, k, v):
+    if k in dct:
+        dct[k] = "%s:%s" % (v, dct[k])
+    else:
+        dct[k] = v
+
 def system(path, cmd, args):
     from eventlet.processes import Process
     print ">", path, cmd, " ".join(args)
@@ -42,6 +50,17 @@ def system(path, cmd, args):
     os.chdir(curdir)
     print content
     return result, content
+
+def shell(path, cmd):
+    args = shlex.split(str(cmd))
+    try:
+        popen = subprocess.Popen(list(args), cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = popen.communicate()
+    except OSError, e:
+        err = str(e)
+        out = None
+    
+    return out, err
 
 def fix_unicode_keys(o):
     """
@@ -134,6 +153,6 @@ class NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
-root = logging.getLogger()
-root.addHandler(NullHandler())
-root.setLevel(0)
+#root = logging.getLogger()
+#root.addHandler(NullHandler())
+#root.setLevel(0)

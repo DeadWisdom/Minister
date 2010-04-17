@@ -38,25 +38,25 @@ def DebugNotFound(manager):
         else:
             port = ""
         
-        for resource in manager.layout.resources:
+        for resource in manager.resources:
             if resource.site:
                 site = "http://" + resource.site + port
             else:
                 site = ""
             urls.append( simple_template(url_template, {'url': resource.url, 'site': site}) )
     
-        for resource in manager.services.resources:
-            if resource.status not in ("active", "struggling"):
+        for service in manager.services:
+            if service.status not in ("active", "struggling"):
                 continue
-            if resource._service.disabled or resource.disabled:
+            if service.disabled:
                 continue
             
-            url = resource._service.url
+            url = service['url']
             if url is None:
                 continue
         
-            if resource._service.site not in ('*', None):
-                site = "http://" + resource._service.site + port
+            if service['site'] not in ('*', None):
+                site = "http://" + service['site'] + port
             else:
                 site = ""
             urls.append( simple_template(url_template, {'url': url, 'site': site}) )

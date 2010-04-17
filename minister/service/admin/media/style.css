@@ -61,6 +61,8 @@ a:hover { text-decoration: underline }
     margin-top: 8px;
 }
 
+.unknown .info      { color: #AAA; }
+
 .disabled .info { color: #AAA; }
 .active .info, .loading .info { color: #9ec167; }
 .struggling .info { color: #bc7468; }
@@ -74,7 +76,6 @@ a:hover { text-decoration: underline }
 
 .loading .icon     { background-image: url(icons/loading.gif); }
 
-.unknown .info      { color: #AAA; }
 .unknown:hover {
     cursor: default;
     background-color: white;

@@ -1,6 +1,6 @@
 import os, sys, atexit
 
-import eventlet
+import eventlet, logging
 from eventlet import wsgi
 from eventlet.green import socket
 
@@ -10,49 +10,35 @@ from debug import DebugNotFound, DebugInternalServerError
 from resource import Resource
 from tokens import ServiceToken
 from service import Service
-from util import json, fix_unicode_keys, get_logger, FileLikeLogger
-
+from util import json, fix_unicode_keys, FileLikeLogger
 
 class Manager(Resource):
     type = 'manager'
     path = None
-    layout = None
+    resources = []
     services = []
     debug = False
     address = None
-    
-    log_level = "DEBUG"
-    log_count = 4
-    log_max_bytes = 2**25       # 32Mb
-    log_format = "%(asctime)s - %(levelname)s - %(message)s"
-    log_echo = False
     
     def init(self):
         self.path = os.path.abspath(self.path)
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
         
-        self._log = get_logger(self.path,
-                               "minister",
-                               level=self.log_level,
-                               max_bytes=self.log_max_bytes,
-                               count=self.log_count,
-                               format=self.log_format,
-                               echo=self.log_echo)
-                               
-        tokens = [ServiceToken(s) for s in self.services]
-        for t in tokens:
-            t._manager = self
-            
-        self.services = Resource.create( tokens )
-        self.layout = Resource.create( self.layout or [] )
-        
-        self._tokens = dict((t.path, t) for t in tokens)
         self._threads = []
         self._socket = None
-    
+        
+        self._token_map = {}
+        self._paths = set()
+        
+        self.services, services = [], self.services
+        for s in services:
+            self.add_service(s['path'], s)
+            
+        self.resources = Resource.create(self.resources)
+            
     def save(self):
-        file = open(os.path.join(self.path, 'config.json'), 'w')
+        file = open(os.path.join(self.path, 'minister.json'), 'w')
         try:
             json.dump(self.simple(), file)
         finally:
@@ -62,16 +48,16 @@ class Manager(Resource):
         while self._threads:
             eventlet.kill( self._threads.pop() )
         self._socket = None
-        for token in self.services.resources:
+        for service in self.services:
             try:
-                token.withdraw()
+                service.withdraw()
             except:
                 pass
     
     @classmethod
     def listen(cls, address):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(address)
         sock.listen(500)
         return sock
@@ -80,9 +66,9 @@ class Manager(Resource):
         if self._socket:
             return
         
-        for token in self._tokens.values():
-            self._log.info("loading service: %s", token.properties.get('path'))
-            token.deploy()
+        for service in self.services:
+            logging.info("loading service: %s", service.path)
+            service.deploy()
             
         service_path = os.path.join(self.path, 'services')
         if not os.path.exists(service_path):
@@ -100,8 +86,7 @@ class Manager(Resource):
             self.address = self._socket.getsockname()
             
             print "Manager servering on http://%s:%s" % self.address
-            self._log.info("manager serving on http://%s:%s", *self.address)
-            print "Loading..."
+            logging.info("manager serving on http://%s:%s", *self.address)
             wsgi.server(self._socket, self, log=FileLikeLogger('minister'))
         except Exception, e:
             raise e
@@ -114,14 +99,23 @@ class Manager(Resource):
         environ['PATH_INFO'] = environ['PATH_INFO'][1:]
         
         try:
-            response = self.layout(environ, start_response)
+            response = self.resources(environ, start_response)
             if response is not None:
                 return response
             
-            response = self.services(environ, start_response)
-            if response is not None:
-                return response
-        except:
+            requested_path = environ.get('PATH_INFO', '')
+            hostname, _, _ = environ.get('HTTP_HOST').partition(":")
+            for service in self.services:
+                if service.disabled or not service.service:
+                    continue
+                if not service.match_site(hostname):
+                    continue
+                delta = service.match_path(requested_path)
+                if delta is not None:
+                    environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + requested_path[:len(requested_path)-len(delta)]
+                    environ['PATH_INFO'] = delta
+                    return service(environ, start_response)
+        except Exception, e:
             if self.debug:
                 return DebugInternalServerError(sys.exc_info())(environ, start_response)
             else:
@@ -140,35 +134,41 @@ class Manager(Resource):
         self._threads.append( eventlet.spawn(loop) )
     
     def update(self):
-        for token in self._tokens.values():
-            if token.status in ("active", "failed", "disabled", "mia"):
+        for service in self.services:
+            if service.status in ("active", "failed", "disabled", "mia"):
                 try:
-                    if token.check_source():
-                        self._log.info("reloading service: %s", token.properties.get('path'))
-                        token.redeploy()
+                    if service.check_source():
+                        logging.info("reloading service: %s", service.path)
+                        service.redeploy()
                 except Exception, e:
-                    self._log.exception("error updating service: %s", e)
-                
+                    logging.exception("error updating service: %s", e)
+    
+    def get_service(self, k):
+        return self._token_map[k]
+    
+    def add_service(self, path, override=None):
+        t = ServiceToken(self, path, override)
+        self._token_map[t.slug] = t
+        self._paths.add(path)
+        self.services.append(t)
+        return t
+    
+    def has_service(self, path):
+        return path in self._paths
+    
     def scan(self):
         service_path = os.path.join(self.path, 'services')
         new = []
         for filename in os.listdir( service_path ):
-            try:
-                path = os.path.join(service_path, filename)
-                if os.path.isdir(path) and path not in self._tokens:
-                    t = ServiceToken({'path': os.path.abspath(path)})
-                    if t.is_valid():
-                        new.append(t)
-                        self._tokens[t.path] = t
-                        self.services.resources.append(t)
-                        t._manager = self
-                        t.deploy()
-            except Exception, e:
-                self._log.exception("error scanning file (%s): %s", filename, e)
-                
+            path = os.path.join(service_path, filename)
+            if os.path.isdir(path) and not self.has_service(path):
+                s = self.add_service(path)
+                new.append(s)
+                if s.is_valid():
+                    s.deploy()
         if new:
             self.save()
-            self._log.info("new services found: \n%s" % "  \n".join([t.properties.get('path') for t in new]))
+            logging.info("new services found: \n   %s" % "\n   ".join([s.path for s in new]))
 
 def set_process_owner(spec, group=None):
     import pwd, grp
@@ -265,7 +265,7 @@ def run():
 
     file = None
     try:
-        file = open(os.path.join(options.path, 'config.json'))
+        file = open(os.path.join(options.path, 'minister.json'))
         config = fix_unicode_keys( json.load( file ) )
     except IOError, e:
         config = {
@@ -275,10 +275,10 @@ def run():
         if file: file.close()
     
     config['path'] = options.path
-    if options.verbose:
-        config['log_echo'] = "DEBUG"
-    else:
-        config['log_echo'] = "WARNING"
+    #if options.verbose:
+    #    config['log_echo'] = "DEBUG"
+    #else:
+    #    config['log_echo'] = "WARNING"
     
     if options.debug:
         config['debug'] = True

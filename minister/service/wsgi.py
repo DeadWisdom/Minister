@@ -1,6 +1,15 @@
 import os, sys
 import base
 
+class Service(base.PythonService):
+    type = 'wsgi:service'
+    name = "Wsgi Service"
+    args = [__file__]
+    app = None
+    num_process = 2
+
+
+### Client Side #############################################
 def resolve_app(sig):
     """
     Resolves the app function based on an import string:
@@ -17,17 +26,11 @@ def resolve_app(sig):
     return getattr(m, app)
 
 
-class Service(base.Service):
-    type = 'wsgi'
-    name = "Wsgi Service"
-    args = [__file__]
-    app = None
-
-
 if __name__ == '__main__':
     settings = Service.setup_backend()
     
     print "Starting service."
+    print sys.path
     
     from eventlet import wsgi
     wsgi.server(settings['socket'], resolve_app(settings['app']))

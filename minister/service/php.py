@@ -9,7 +9,7 @@ from eventlet.green import socket
 from minister.static import Static
 
 class Service(fastcgi.Service):
-    type = 'php'
+    type = 'php:service'
     address = ('127.0.0.1', 0)
     executable = 'php-cgi'
     ini = None

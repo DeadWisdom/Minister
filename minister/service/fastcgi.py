@@ -7,7 +7,7 @@ from minister.resource import Resource
 
 class Service(base.Service):
     ### Properties #########################
-    type = 'fastcgi'
+    type = 'fastcgi:service'
     executable = None
     requires = []
     name = "Unnamed FCGI Service"
