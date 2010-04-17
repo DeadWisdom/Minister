@@ -84,7 +84,7 @@ class ServiceToken(object):
                 self.deploy_file = MutableFile(path)
                 self.deploy_options = fix_unicode_keys( json.load(self.deploy_file) )
             except Exception, e:
-                self.error("Bad service.json - %s: %s" % (path, e))
+                self.log.error("Bad service.json - %s: %s" % (path, e))
                 self.deploy_file = None
                 self.deploy_options = {}
                 self.status = "failed"
