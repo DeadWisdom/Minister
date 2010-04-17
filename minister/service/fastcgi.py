@@ -17,7 +17,6 @@ class Service(base.Service):
     ### Instance Methods ###################
     def init(self):
         self._resource = FastCGI(address=self.address, filter=self.filter)
-        self.layout = Resource.create(self.layout)
     
     def _proxy(self, environ, start_response):
         self._resource(environ, start_response)

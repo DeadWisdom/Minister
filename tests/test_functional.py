@@ -18,7 +18,7 @@ class TestManager(TestCase):
         services = [{'type': 'admin', 'path': '@admin', 'url': 'admin/', 'site': '*'}]
         self.manager = Manager(path=self.repo_path, services=services, debug=True)
         eventlet.spawn(self.manager.serve, ('', port))
-        eventlet.sleep(.03)     #Give it some time to get on its feet.
+        eventlet.sleep(.3)     #Give it some time to get on its feet.
     
     def tearDown(self):
         self.manager.close()
@@ -50,5 +50,5 @@ class TestManager(TestCase):
         self.assertEqual(request.status, 404)
         
     def test_d(self):
-        self.assertEqual(self.manager.get_service('d').status, 'mia')
+        self.assertEqual(self.manager.get_service('d').status, 'failed')
         
