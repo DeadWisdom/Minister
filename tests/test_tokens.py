@@ -45,7 +45,7 @@ class TestTokens(TestCase):
         
         response = self.request(t.service.address, "")
         self.assertTrue( response.status, 200 )
-        self.assertEqual( response.read(), "Deployment - A\n\nPath: /Users/deadwisdom/projects/minister/tests/repo/services/a" )
+        self.assertTrue( response.read().startswith("Deployment - A\n") )
         
         t.withdraw()
         

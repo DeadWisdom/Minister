@@ -1,5 +1,4 @@
 = TODO =
-    Virtual Env System - (yay pip)
     Source Fixes - (make sure everything works properly)
     Task System - (like cron, but you know better)
     LogPath - (fix the logs to take a logpath instead of path+name)
@@ -31,3 +30,4 @@
     Daemon Dance
     Demonization - (also set user / group for root)
  -- Use As My Actual Webserver Milestone --
+    Virtual Env System - (yay pip)
