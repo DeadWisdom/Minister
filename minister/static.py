@@ -52,7 +52,6 @@ class Static(Resource):
         return self.serve(environ, start_response, path)
         
     def notfound_or_none(self, environ, start_response):
-        print self.strict
         if self.strict:
             return http.NotFound()(environ, start_response)
         else:
