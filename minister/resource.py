@@ -125,6 +125,12 @@ class Layout(Resource):
     
     def add(self, resoures):
         self.resources += list(resoures)
+    
+    def insert(self, index, resource):
+        self.resources.insert( index, resource )
+    
+    def extend(self, resources):
+        self.resources.extend( resources )
 
 class ListLayout(Layout):
     """ Like a layout, but simplifies to a list. """
