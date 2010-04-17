@@ -142,16 +142,17 @@ class ServiceToken(object):
             self.log.error("Service lacks service type: %s", self.path)
             return
         
-        cls = Resource.get_class(options['type'])
-        if cls is None:
-            cls = Resource.get_class(options['type'] + ":service")
+        cls = Resource.get_class(options['type'] + ":service")
+        if cls is not None:
+            options['type'] = options['type'] + ':service'
+        
+        else:
+            cls = Resource.get_class(options['type'])
             if cls is None:
                 self.status = "failed"
                 self.status_info = "Cannot find service type: %s" % options['type']
                 self.log.error(self.status_info)
                 return
-            else:
-                options['type'] = options['type'] + ':service'
         
         try:
             self.service = Resource.create(options)

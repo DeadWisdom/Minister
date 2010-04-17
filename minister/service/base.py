@@ -29,6 +29,9 @@ class Service(Resource):
     root = None
     url = ""
     
+    input = None
+    output = None
+    
     _manager = None
     _logger = logging.getLogger("minister")
     
@@ -38,7 +41,7 @@ class Service(Resource):
         self.resources = Resource.create(self.resources)
         if self.root is not None:
             self.resources.append(Resource.create(dict(type='static', url='', root=self.root, strict=False)))
-
+    
     def __call__(self, environ, start_response):
         """For use as a wsgi app, will pipe to our proxy."""
         if self.resources:
