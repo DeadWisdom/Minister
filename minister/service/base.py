@@ -34,10 +34,11 @@ class Service(Resource):
     ### Instance Methods ###################
     def __init__(self, **kw):
         super(Service, self).__init__(**kw)
+
         self.resources = Resource.create(self.resources)
-        new_resource = Resource.create(dict(type='static', url='', root=self.root, strict=False))
-        raise "asdf"
-    
+        if self.root is not None:
+            self.resources.append(Resource.create(dict(type='static', url='', root=self.root, strict=False)))
+
     def __call__(self, environ, start_response):
         """For use as a wsgi app, will pipe to our proxy."""
         if self.resources:

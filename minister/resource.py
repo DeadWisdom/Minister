@@ -49,7 +49,7 @@ class Resource(object):
     @classmethod
     def create(cls, properties):
         if properties is None:
-            return None
+            return ListLayout(resources=[])
         if isinstance(properties, Resource):
             return properties
         if isinstance(properties, list):
@@ -122,23 +122,26 @@ class Layout(Resource):
                 environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + requested_path[:len(requested_path)-len(delta)]
                 environ['PATH_INFO'] = delta
                 return resource(environ, start_response)
-    
-    def add(self, resoures):
-        self.resources += list(resoures)
+
+    def __getitem__(self, i):
+        return self.resources[i]
+
+    def __getslice__(self, *a):
+        return self.resources.__getslice__(*a)
+
+    def __iter__(self):
+        return self.resources.__iter__()
+
+    def append(self, resoure):
+        self.resources.append(resoure)
+
+    def __str__(self):
+        return "%s : %s" % (self.__class__, self.resources)
 
 class ListLayout(Layout):
     """ Like a layout, but simplifies to a list. """
     def simple(self):
         return [o.simple() for o in self.resources]
-    
-    def __getitem__(self, i):
-        return self.resources[i]
-    
-    def __getslice__(self, *a):
-        return self.resources.__getslice__(*a)
-    
-    def __iter__(self):
-        return self.resources.__iter__()
 
 class App(Resource):
     """Turns any app into a resource."""
