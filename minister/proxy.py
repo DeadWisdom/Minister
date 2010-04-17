@@ -11,6 +11,7 @@ from minister import http
 from resource import Resource
 from eventlet.green import httplib
 from urllib import quote as url_quote
+from urlparse import urlparse
 
 # Remove these headers from response (specify lower case header
 # names):
@@ -22,6 +23,16 @@ class Proxy(Resource):
     type = 'proxy'
     address = ('', 0)
     
+    def _get_conn_class(self, environ, scheme=''):
+        if scheme == '':
+            scheme = environ['wsgi.url_scheme']
+        if scheme == 'http':
+            return httplib.HTTPConnection
+        elif scheme == 'https':
+            return httplib.HTTPSConnection
+        else:
+            raise ValueError("Unknown scheme: %r" % scheme)
+
     def __call__(self, environ, start_response):
         """
         HTTP proxying WSGI application that proxies the exact request
@@ -33,15 +44,16 @@ class Proxy(Resource):
 
         Does not add X-Forwarded-For or other standard headers
         """
-        scheme = environ['wsgi.url_scheme']
-        if scheme == 'http':
-            ConnClass = httplib.HTTPConnection
-        elif scheme == 'https':
-            ConnClass = httplib.HTTPSConnection
-        else:
-            raise ValueError("Unknown scheme: %r" % scheme)
         
-        conn = ConnClass(*self.address)
+        if isinstance(self.address, basestring):
+            parsed_address = urlparse(self.address)
+            host = parsed_address.hostname
+            port = parsed_address.port
+            ConClass = self._get_conn_class(environ, parsed_address.scheme)
+            conn = ConnClass(parsed_address.hostname, parsed_address.port)
+        else:
+            conn = self._get_conn_class(environ)(*self.address)
+
         headers = {}
         for key, value in environ.items():
             if key.startswith('HTTP_'):
