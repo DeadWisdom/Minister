@@ -27,6 +27,7 @@ class Service(Resource):
     path = None
     resources = None
     root = None
+    url = ""
     
     _manager = None
     _logger = logging.getLogger("minister")
