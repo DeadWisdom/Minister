@@ -151,3 +151,17 @@ class App(Resource):
     
     def __call__(self, environ, start_response):
         return self.app(environ, start_response)
+
+class RewriteFilter(Resource):
+    type = "rewrite"
+    rules = []
+    url = "*"
+    site = "*"
+    
+    def __call__(self, environ, start_response):
+        path = environ['PATH_INFO']
+        for pattern, result in self.rules:
+            m = re.match(pattern)
+            if m:
+                environ['PATH_INFO'] = m.expand(result)
+                return None

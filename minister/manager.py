@@ -67,7 +67,7 @@ class Manager(Resource):
     def save(self):
         file = open(os.path.join(self.path, 'config.json'), 'w')
         try:
-            json.dump(self.simple(), file)
+            json.dump(self.simple(), file, indent=4)
         finally:
             file.close()
     

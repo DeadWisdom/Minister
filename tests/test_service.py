@@ -10,6 +10,7 @@ from eventlet.greenio import socket
 from eventlet.green import httplib
 from eventlet.timeout import Timeout
 
+### Disable this, because it'll mess the virtualenv up.
 if 'PIP_VIRTUALENV_BASE' in os.environ:
     del os.environ['PIP_VIRTUALENV_BASE']
 

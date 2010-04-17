@@ -1,4 +1,5 @@
 = TODO =
+    Fix absolute path problem that Cosmin found.
     Source Fixes - (make sure everything works properly)
     Task System - (like cron, but you know better)
     LogPath - (fix the logs to take a logpath instead of path+name)
