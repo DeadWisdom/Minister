@@ -10,6 +10,7 @@ class Static(Resource):
     default_type = 'text/plain'
     read_block_size = 16 * 4096
     index = ('index.html',)
+    strict = True
     exclude = []
     volatile = False            # If True, everything is out of date for modified checking.
     _handlers = {}              # Map extensions to handler functions.
@@ -23,11 +24,11 @@ class Static(Resource):
         path = self.find_real_path(environ.get('SERVICE_PATH', ''), requested_path)
         
         if not path:
-            return http.NotFound()(environ, start_response)
+            return self.notfound_or_none(environ, start_response)
         
         for e in self.exclude:
             if path.endswith('/%s' % e):
-                return http.NotFound()(environ, start_response)
+                return self.notfound_or_none(environ, start_response)
                 
         if os.path.isdir(path):
             if requested_path == '' or requested_path.endswith('/'):
@@ -50,6 +51,13 @@ class Static(Resource):
         
         return self.serve(environ, start_response, path)
         
+    def notfound_or_none(self, environ, start_response):
+        print self.strict
+        if self.strict:
+            return http.NotFound()(environ, start_response)
+        else:
+            return None
+
     def find_real_path(self, root, path):
         path = path.split("/")
         root = os.path.abspath(os.path.join( root, self.root ))
@@ -62,8 +70,8 @@ class Static(Resource):
         """Serve the file at path."""
         
         if not os.path.exists(path):
-            return http.NotFound()(environ, start_response)
-            
+            return self.notfound_or_none(environ, start_response)
+
         try:
             if self.volatile:
                 modified = time.time()
