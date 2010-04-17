@@ -7,7 +7,7 @@ expectations and assumptions.
 Minister has four goals:
  * Make application deployment extremely simple.
    We achieve this by treating applications as "services", each can be
-   configured easily with a deploy.json file found in the base directory of
+   configured easily with a service.json file found in the base directory of
    the app.  Apps can also be specified merely by pointing to a resource such
    as a url of a tarball, a git or hg repository, or an rsyncable directory.
  * The server should be monitoring your apps.
@@ -74,5 +74,5 @@ setting the "source" of a service to be an rsyncable directory, a git or hg
 repository, or some remote web tarball, the token will handle the downloading
 and installing of that source into the service directory.  Services can be 
 configured by making changes to the token that is saved to the config.json
-in the manager repository.  Or by altering the deploy.json within the 
+in the manager repository.  Or by altering the service.json within the 
 service's root.

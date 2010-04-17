@@ -46,7 +46,7 @@ the two files we need::
     > mkdir ~/.minister/services/simple
     > cd ~/.minister/services/simple
     > touch serve.py
-    > touch deploy.json
+    > touch service.json
 
 Now lets edit ``serve.py`` to make a simple WSGI app::
 
@@ -54,7 +54,7 @@ Now lets edit ``serve.py`` to make a simple WSGI app::
         start_response('200 OK', [])
         return ("It worked!")
 
-And now we'll edit ``deploy.json`` to tell minister how to deploy our service::
+And now we'll edit ``service.json`` to tell minister how to deploy our service::
 
     {
         "type": "wsgi",
@@ -89,7 +89,7 @@ This gives Minister some essential specifics:
         python module ``serve`` as the WSGI application.
 
 If you haven't shut down minister: once we save, minister will detect that
-``deploy.json`` has updated and will deploy (or redeploy) the service.
+``service.json`` has updated and will deploy (or redeploy) the service.
 Otherwise once we start up again, it will automatically find and deploy the
 service. Now open your browser to `http://localhost:8000/simple/
 <http://localhost:8000/simple/>`_ and marvel at your wsgi process.

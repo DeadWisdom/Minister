@@ -75,7 +75,7 @@ class ServiceToken(object):
             self.deploy_options = self.override
             return self.deploy_options
             
-        path = os.path.join( self.path, 'deploy.json' )
+        path = os.path.join( self.path, 'service.json' )
         if self.deploy_file and not self.deploy_file.is_stale():
             self.deploy_options.update( self.override )
             return self.deploy_options
@@ -84,11 +84,11 @@ class ServiceToken(object):
                 self.deploy_file = MutableFile(path)
                 self.deploy_options = fix_unicode_keys( json.load(self.deploy_file) )
             except Exception, e:
-                self.error("Bad deploy.json - %s: %s" % (path, e))
+                self.error("Bad service.json - %s: %s" % (path, e))
                 self.deploy_file = None
                 self.deploy_options = {}
                 self.status = "failed"
-                self.status_info = "Bad deploy.json"
+                self.status_info = "Bad service.json"
                 raise
         else:
             self.deploy_file = None

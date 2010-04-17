@@ -56,7 +56,7 @@ Service Configuration
 -------------------------
 Within the root directory of minister, there is a directory named ``services``.
 Any directory dropped into it will be assumed to be an actual service as long
-as it has a ``deploy.json`` file within.  This tells minister to deploy said
+as it has a ``service.json`` file within.  This tells minister to deploy said
 service.
 
 This json file is very similar to the Minister ``config.json``, and includes

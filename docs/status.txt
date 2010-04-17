@@ -14,7 +14,7 @@ Current Features
  * Process management
  * Self healing (on process failure)
  * Reverse proxy support
- * Dynamic configuration (deploy.json in the service directory)
+ * Dynamic configuration (service.json in the service directory)
  * Automatic service code updating (source: config option)
  * Logging
  * FastCGI support
