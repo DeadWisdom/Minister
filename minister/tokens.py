@@ -97,6 +97,7 @@ class ServiceToken(object):
             self.status_info = "Path doesn't exist."
             raise RuntimeError("Path does not exist: %s" % path )
         self.deploy_options.update( self.override )
+        self.deploy_options.setdefault('name', self.slug)
         return self.deploy_options
     
     def deploy(self):
