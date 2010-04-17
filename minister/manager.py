@@ -1,6 +1,6 @@
 import os, sys, atexit
 
-import eventlet, logging
+import eventlet
 from eventlet import wsgi
 from eventlet.green import socket
 
@@ -11,6 +11,7 @@ from resource import Resource
 from tokens import ServiceToken
 from service import Service
 from util import json, fix_unicode_keys, FileLikeLogger
+from logger import get_logger, make_logger
 
 class Manager(Resource):
     type = 'manager'
@@ -19,11 +20,30 @@ class Manager(Resource):
     services = []
     debug = False
     address = None
+    log = dict(
+        level = "DEBUG",
+        count = 4,
+        bytes = 2**25,       # 32Mb
+        format = "%(asctime)s - %(levelname)s - %(message)s",
+        echo = False,
+        path = None,
+        name = 'minister'
+    )
     
     def init(self):
         self.path = os.path.abspath(self.path)
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
+            
+        if isinstance(self.log, basestring):
+            self.log = get_logger(self.log)
+        elif isinstance(self.log, dict):
+            log, self.log = self.log, {}
+            self.log.update(self.__class__.log)
+            self.log.update(log)
+            if self.log['path'] is None:
+                self.log['path'] = os.path.join(self.path, 'logs', 'minister.log')
+            self.log = make_logger(**self.log)
         
         self._threads = []
         self._socket = None
@@ -36,9 +56,16 @@ class Manager(Resource):
             self.add_service(s['path'], s)
             
         self.resources = Resource.create(self.resources)
-            
+    
+    def simple(self):
+        log = self.log
+        del self.log
+        result = super(Manager, self).simple()
+        self.log = log
+        return result
+    
     def save(self):
-        file = open(os.path.join(self.path, 'minister.json'), 'w')
+        file = open(os.path.join(self.path, 'config.json'), 'w')
         try:
             json.dump(self.simple(), file)
         finally:
@@ -67,7 +94,7 @@ class Manager(Resource):
             return
         
         for service in self.services:
-            logging.info("loading service: %s", service.path)
+            self.log.info("loading service: %s", service.path)
             service.deploy()
             
         service_path = os.path.join(self.path, 'services')
@@ -86,7 +113,7 @@ class Manager(Resource):
             self.address = self._socket.getsockname()
             
             print "Manager servering on http://%s:%s" % self.address
-            logging.info("manager serving on http://%s:%s", *self.address)
+            self.log.info("manager serving on http://%s:%s", *self.address)
             wsgi.server(self._socket, self, log=FileLikeLogger('minister'))
         except Exception, e:
             raise e
@@ -138,10 +165,10 @@ class Manager(Resource):
             if service.status in ("active", "failed", "disabled", "mia"):
                 try:
                     if service.check_source():
-                        logging.info("reloading service: %s", service.path)
+                        self.log.info("reloading service: %s", service.path)
                         service.redeploy()
                 except Exception, e:
-                    logging.exception("error updating service: %s", e)
+                    self.log.exception("error updating service: %s", e)
     
     def get_service(self, k):
         return self._token_map[k]
@@ -168,7 +195,7 @@ class Manager(Resource):
                     s.deploy()
         if new:
             self.save()
-            logging.info("new services found: \n   %s" % "\n   ".join([s.path for s in new]))
+            self.log.info("new services found: \n   %s" % "\n   ".join([s.path for s in new]))
 
 def set_process_owner(spec, group=None):
     import pwd, grp
@@ -265,7 +292,7 @@ def run():
 
     file = None
     try:
-        file = open(os.path.join(options.path, 'minister.json'))
+        file = open(os.path.join(options.path, 'config.json'))
         config = fix_unicode_keys( json.load( file ) )
     except IOError, e:
         config = {

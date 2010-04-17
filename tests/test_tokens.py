@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os
+import os, logging
 from unittest import TestCase
 from minister.resource import Resource
 from minister.tokens import ServiceToken
@@ -10,6 +10,7 @@ from eventlet.green import httplib
 from eventlet.timeout import Timeout
 
 class MockManager(object):
+    log = logging
     path = os.path.join(__file__, '..', 'repo')
     tokens = []
 

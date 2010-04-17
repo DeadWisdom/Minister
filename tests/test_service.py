@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os
+import os, logging
 from unittest import TestCase
 from minister.service import base
 from minister.resource import Resource
@@ -12,6 +12,7 @@ from eventlet.timeout import Timeout
 
 
 class MockManager(object):
+    log = logging
     path = os.path.join(__file__, '..', 'repo')
 
 class TestServices(TestCase):

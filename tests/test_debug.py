@@ -1,11 +1,12 @@
 #!/usr/bin/python
-import sys
+import sys, logging
 from unittest import TestCase
 from test_resource import TestResource
 from minister.resource import Resource
 from minister.debug import DebugNotFound, DebugInternalServerError
 
 class MockManager(object):
+    log = logging
     def __init__(self, address):
         self.resources = Resource.create([])
         self.services = Resource.create([])

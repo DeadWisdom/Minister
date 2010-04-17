@@ -1,7 +1,8 @@
-import logging
+import os, logging
 
-def make_logger(path=None, name=None, level=None, max_bytes=None, count=None, format=None, echo=None):
-    path = os.path.join(path, 'logs', name + ".log")
+get_logger = logging.getLogger
+
+def make_logger(path=None, name=None, level=None, bytes=None, count=None, format=None, echo=None):
     base = os.path.dirname(path)
     if not os.path.isdir(base):
         os.makedirs(base)
@@ -11,7 +12,7 @@ def make_logger(path=None, name=None, level=None, max_bytes=None, count=None, fo
 
     formatter = logging.Formatter(format)
     
-    handler = logging.handlers.RotatingFileHandler(path, maxBytes=max_bytes, backupCount=count)
+    handler = logging.handlers.RotatingFileHandler(path, maxBytes=bytes, backupCount=count)
     handler.setLevel(getattr( logging, level.upper() ))
     handler.setFormatter(formatter)
     logger.addHandler( handler )
@@ -23,8 +24,23 @@ def make_logger(path=None, name=None, level=None, max_bytes=None, count=None, fo
         else:
             handler.setLevel(getattr( logging, level.upper() ))
         handler.setFormatter(formatter)
-        logger.addHandler( handler )    
+        logger.addHandler( handler )
+    
+    logger.options = {
+        'path': path,
+        'name': name,
+        'level': level,
+        'bytes': bytes,
+        'count': count,
+        'format': format,
+        'echo': echo
+    }
     
     return logger
+
+def dup_logger(existing_name, **override):
+    options = get_logger(existing_name).options.copy()
+    options.update(override)
+    assert name != options['name'], "Must provide a name in your options"
+    return make_logger(**options)
     
-logging = logging.getLogger("minister")

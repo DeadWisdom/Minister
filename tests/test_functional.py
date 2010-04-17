@@ -50,5 +50,5 @@ class TestManager(TestCase):
         self.assertEqual(request.status, 404)
         
     def test_d(self):
-        self.assertEqual(self.manager.get_service('d').status, 'failed')
+        self.assertEqual(self.manager.get_service('d').status, 'mia')
         

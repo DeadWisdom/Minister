@@ -1,4 +1,4 @@
-import eventlet, logging
+import eventlet
 
 try:
     import json
@@ -44,6 +44,7 @@ class ServiceToken(object):
         self.override['path'] = self.path
         self.deploy_options = self.override.copy()
         self.deploy_file = None
+        self.log = manager.log
         
     ### Options ###
     def __getitem__(self, k):
@@ -83,7 +84,7 @@ class ServiceToken(object):
                 self.deploy_file = MutableFile(path)
                 self.deploy_options = fix_unicode_keys( json.load(self.deploy_file) )
             except Exception, e:
-                logging.error("Bad deploy.json - %s: %s" % (path, e))
+                self.error("Bad deploy.json - %s: %s" % (path, e))
                 self.deploy_file = None
                 self.deploy_options = {}
                 self.status = "failed"
@@ -127,12 +128,12 @@ class ServiceToken(object):
         try:
             options = self.load_options().copy()
             options['_manager'] = self.manager
-            options['_logger'] = logging
+            options['_logger'] = self.log
             
             if not options.get('type'):
                 self.status = "mia"
                 self.status_info = "Service type not found."
-                logging.error("Service lacks service type: %s", self.path)
+                self.log.error("Service lacks service type: %s", self.path)
                 return
             
             cls = Resource.get_class(options['type'])
@@ -141,7 +142,7 @@ class ServiceToken(object):
                 if cls is None:
                     self.status = "failed"
                     self.status_info = "Cannot find service type: %s" % options['type']
-                    logging.error(self.status_info)
+                    self.log.error(self.status_info)
                     return
                 else:
                     options['type'] = options['type'] + ':service'
@@ -210,7 +211,7 @@ class ServiceToken(object):
         while True:
             try:
                 if self.deploy_file and self.deploy_file.is_stale():
-                    logging.info("reloading service: %s", self.path)
+                    self.log.info("reloading service: %s", self.path)
                     return self.redeploy()
                 healthy, info = self.service.get_health()
                 if not healthy:
@@ -219,7 +220,7 @@ class ServiceToken(object):
                     self.status = "active"
                     self.status_info = info
             except Exception, e:
-                logging.exception(e)
+                self.log.exception(e)
             eventlet.sleep(interval)
     
     def info(self):
