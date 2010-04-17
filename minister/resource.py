@@ -151,7 +151,8 @@ class App(Resource):
     type = 'app'
     app = None
     
-    def init(self):
+    def __init__(self, **kw):
+        super(App, self).__init__(**kw)
         if not self.app:
             raise TypeError("__init__ must specify an *app* keyword.")
     
