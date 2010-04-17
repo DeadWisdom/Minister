@@ -10,6 +10,8 @@ from eventlet.greenio import socket
 from eventlet.green import httplib
 from eventlet.timeout import Timeout
 
+if 'PIP_VIRTUALENV_BASE' in os.environ:
+    del os.environ['PIP_VIRTUALENV_BASE']
 
 class MockManager(object):
     log = logging
