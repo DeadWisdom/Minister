@@ -28,6 +28,7 @@ class Service(Resource):
     resources = None
     root = None
     url = ""
+    middleware = None
     
     input = None
     output = None
@@ -39,15 +40,26 @@ class Service(Resource):
     def __init__(self, **kw):
         super(Service, self).__init__(**kw)
         self.resources = Resource.create(self.resources)
+        if self.middleware:
+            self.middleware = [Resource.create(x) for x in self.middleware]
+        else:
+            self.middleware = []
         if self.root is not None:
+            self.root = os.path.abspath( os.path.join(self.path, self.root) )
             self.resources.append(Resource.create(dict(type='static', url='', root=self.root, strict=False)))
     
     def __call__(self, environ, start_response):
-        """For use as a wsgi app, will pipe to our proxy."""
+        """For use as a wsgi app."""
         if self.resources:
             response = self.resources(environ, start_response)
             if response:
                 return response
+                
+    def get_app(self):
+        app = self
+        for m in reversed(self.middleware):
+            app = m(app)
+        return app
     
     def start(self):
         if self.before_deploy:

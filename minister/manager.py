@@ -144,10 +144,11 @@ class Manager(Resource):
                     return service(environ, start_response)
                     
         except Exception, e:
+            exc_info = sys.exc_info()
             if self.debug:
-                return DebugInternalServerError(sys.exc_info())(environ, start_response)
+                return DebugInternalServerError(exc_info=exc_info)(environ, start_response)
             else:
-                return InternalServerError()(environ, start_response)
+                return InternalServerError(exc_info=exc_info)(environ, start_response)
         
         if self.debug:
             return DebugNotFound(self)(environ, start_response)

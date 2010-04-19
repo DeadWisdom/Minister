@@ -34,9 +34,13 @@ class Static(Resource):
             if requested_path == '' or requested_path.endswith('/'):
                 index, path = self.find_index(path)
                 if path is None:
+                    if not self.strict:
+                        return None
                     return self.dir_listing(environ, start_response, path)
                 environ['PATH_INFO'] = requested_path + index
             else:
+                if not self.strict:
+                    return None
                 return http.MovedPermanently(self.corrected_dir_uri(environ))(environ, start_response)
         
         try:
@@ -72,10 +76,12 @@ class Static(Resource):
             return self.notfound_or_none(environ, start_response)
 
         try:
+            stat = os.stat(path)
+            
             if self.volatile:
                 modified = time.time()
             else:
-                modified = os.stat(path).st_mtime
+                modified = stat.st_mtime
     
             headers = [('Date', rfc822.formatdate(time.time())),
                        ('Last-Modified', rfc822.formatdate(modified)),
@@ -94,6 +100,7 @@ class Static(Resource):
             
             content_type = mimetypes.guess_type(path)[0] or self.default_type
             headers.append(('Content-Type', content_type))
+            headers.append(('Content-Length', str(stat.st_size)))
             start_response("200 OK", headers)
             if environ['REQUEST_METHOD'] == 'GET':
                 return environ.get('wsgi.file_wrapper', self.yield_file)(open(path))
@@ -113,6 +120,7 @@ class Static(Resource):
                 if not block:
                     break
                 yield block
+                eventlet.sleep(0)
         finally:
             file.close()
     

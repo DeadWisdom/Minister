@@ -5,6 +5,7 @@
     "url": "a/",
     "site": "*",
     "virtualenv": null,
+    "root": ".",
     "resources": [
         {"type": "simple", "url": "simple", "content": "Simple Resource A"}
     ],

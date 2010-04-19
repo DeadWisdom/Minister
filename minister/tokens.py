@@ -45,6 +45,7 @@ class ServiceToken(object):
         self.deploy_options = self.override.copy()
         self.deploy_file = None
         self.log = manager.log
+        self.call_chain = None
         
     ### Options ###
     def __getitem__(self, k):
@@ -167,6 +168,8 @@ class ServiceToken(object):
             self.status = 'disabled'
         else:
             self.service.start()
+            
+        self.app = self.service.get_app()
         
         self.threads.append( eventlet.spawn(self._status_loop) )
         self.threads.remove( eventlet.getcurrent() )
@@ -256,5 +259,5 @@ class ServiceToken(object):
         return self.override.copy()
     
     def __call__(self, environ, start_response):
-        return self.service(environ, start_response)
+        return self.app(environ, start_response)
         
