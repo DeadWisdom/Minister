@@ -3,14 +3,14 @@
     Source Fixes - (make sure everything works properly)
     Task System - (like cron, but you know better)
     LogPath - (fix the logs to take a logpath instead of path+name)
-    Digest Auth
+    Basic / Digest Auth
     SSL Support
-    Ruby Service - (gem manager?)
+    Better Admin - (manage services, logs, etc)
     Resource / Health Monitoring
-    Project Website / Mailing List
+    Mailing List
  -- Beta Release Milestone --
     Tests
-    Better Admin - (manage services, logs, etc)
+    Ruby Service - (gem manager?)
     Profile System - (profile services, but also a profile website like pypy)
     Plugin System
     Memcachedb Service
@@ -28,7 +28,7 @@
     Fix README
     Process Refactor - (rebase onto eventlet.green.subprocess for everything)
     Fix PHP Bugs
-    Daemon Dance
-    Demonization - (also set user / group for root)
+    Daemon Dance / Demonization - (also set user / group for root)
  -- Use As My Actual Webserver Milestone --
     Virtual Env System - (yay pip)
+    Project Website

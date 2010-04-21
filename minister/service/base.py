@@ -13,6 +13,7 @@ from minister.process import Process
 from minister.resource import Resource
 from minister.proxy import Proxy
 from minister.util import shell, json, fix_unicode_keys, get_logger, path_insert
+from minister.middleware import Middleware
 
 class Service(Resource):
     """
@@ -40,10 +41,7 @@ class Service(Resource):
     def __init__(self, **kw):
         super(Service, self).__init__(**kw)
         self.resources = Resource.create(self.resources)
-        if self.middleware:
-            self.middleware = [Resource.create(x) for x in self.middleware]
-        else:
-            self.middleware = []
+        self.middleware = [Middleware.create(x) for x in (self.middleware or [])]
         if self.root is not None:
             self.root = os.path.abspath( os.path.join(self.path, self.root) )
             self.resources.append(Resource.create(dict(type='static', url='', root=self.root, strict=False)))

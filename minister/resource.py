@@ -32,7 +32,7 @@ class Resource(object):
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             if not k.startswith('_') and not hasattr(self.__class__, k):
-                raise TypeError("__init__ got an unexpected keyword argument %r" % k)
+                raise TypeError("%s.__init__ got an unexpected keyword argument %r" % (self.__class__.__name__, k))
             setattr(self, k, v)
         self.init()
     
@@ -44,7 +44,7 @@ class Resource(object):
     
     @classmethod
     def get_class(cls, type, default=None):
-        return __types__.get(type, default)
+        return __types__.get(type + ":" + cls.type, __types__.get(type, default))
     
     @classmethod
     def create(cls, properties):
@@ -55,7 +55,7 @@ class Resource(object):
         if isinstance(properties, list):
             instance = ListLayout(resources=[cls.create(o) for o in properties])
         else:
-            type = Resource.get_class(properties.get('type'), cls)
+            type = cls.get_class(properties.get('type'), cls)
             if not type:
                 raise RuntimeError("Unnable to find type:", type)
             instance = type(**properties)

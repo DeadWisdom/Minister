@@ -1,3 +1,4 @@
+import re
 from minister.resource import Resource
 
 class Middleware(Resource):
