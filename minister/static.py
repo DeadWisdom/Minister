@@ -1,4 +1,4 @@
-import os, mimetypes, rfc822, time
+import os, mimetypes, rfc822, time, eventlet
 from urllib import quote
 from resource import Resource
 from minister import http
