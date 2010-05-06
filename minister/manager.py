@@ -141,7 +141,9 @@ class Manager(Resource):
                 if delta is not None:
                     environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + requested_path[:len(requested_path)-len(delta)]
                     environ['PATH_INFO'] = delta
-                    return service(environ, start_response)
+                    response = service(environ, start_response)
+                    if response is not None:
+                        return response
                     
         except Exception, e:
             exc_info = sys.exc_info()
