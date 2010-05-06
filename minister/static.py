@@ -35,11 +35,13 @@ class Static(Resource):
                 index, path = self.find_index(path)
                 if path is None:
                     if not self.strict:
+                        print "We are not strict, and can't find the directory."
                         return None
                     return self.dir_listing(environ, start_response, path)
                 environ['PATH_INFO'] = requested_path + index
             else:
                 if not self.strict:
+                    print "We are not strict, and can't path is empty."
                     return None
                 return http.MovedPermanently(self.corrected_dir_uri(environ))(environ, start_response)
         

@@ -58,7 +58,7 @@ def DebugNotFound(manager):
             url = service['url']
             if url is None:
                 continue
-                
+            
             if service['site'] not in ('*', None):
                 if isinstance(service['site'], basestring):
                     site = service['site']
