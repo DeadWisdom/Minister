@@ -142,7 +142,7 @@ class Manager(Resource):
                     environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + requested_path[:len(requested_path)-len(delta)]
                     environ['PATH_INFO'] = delta
                     response = service(environ, start_response)
-                    print "Service:", response
+                    print "Service:", service, response
                     if response is not None:
                         return response
                     
