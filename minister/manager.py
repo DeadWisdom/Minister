@@ -142,6 +142,7 @@ class Manager(Resource):
                     environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + requested_path[:len(requested_path)-len(delta)]
                     environ['PATH_INFO'] = delta
                     response = service(environ, start_response)
+                    print "Service:", response
                     if response is not None:
                         return response
                     
@@ -151,6 +152,8 @@ class Manager(Resource):
                 return DebugInternalServerError(exc_info=exc_info)(environ, start_response)
             else:
                 return InternalServerError(exc_info=exc_info)(environ, start_response)
+        
+        print "Response:", response
         
         if self.debug:
             return DebugNotFound(self)(environ, start_response)
