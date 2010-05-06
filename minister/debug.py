@@ -39,8 +39,12 @@ def DebugNotFound(manager):
             port = ""
         
         for resource in manager.resources:
+            if isinstance(resource.site, basestring):
+                site = resource.site
+            else:
+                site = resource.site[0]
             if resource.site:
-                site = "http://" + resource.site + port
+                site = "http://" + site + port
             else:
                 site = ""
             urls.append( simple_template(url_template, {'url': resource.url, 'site': site}) )
