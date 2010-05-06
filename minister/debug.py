@@ -58,9 +58,13 @@ def DebugNotFound(manager):
             url = service['url']
             if url is None:
                 continue
-        
+                
             if service['site'] not in ('*', None):
-                site = "http://" + service['site'] + port
+                if isinstance(service['site'], basestring):
+                    site = service['site']
+                else:
+                    site = service['site'][0]
+                site = "http://" + site + port
             else:
                 site = ""
             urls.append( simple_template(url_template, {'url': url, 'site': site}) )
