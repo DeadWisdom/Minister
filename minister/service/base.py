@@ -166,7 +166,7 @@ class ProcessService(Service):
         path_insert(environ, 'PATH', os.path.abspath(os.curdir))
         path_insert(environ, 'PATH', os.path.abspath(self.path))
         
-        environ['OLDPWD'] = environ['PWD']
+        environ['OLDPWD'] = environ.get('PWD', '')
         environ['PWD'] = os.path.abspath(self.path) 
         
         return environ
