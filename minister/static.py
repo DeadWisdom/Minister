@@ -59,7 +59,6 @@ class Static(Resource):
         if self.strict:
             return http.NotFound()(environ, start_response)
         else:
-            return "Not found, so no go."
             return None
 
     def find_real_path(self, root, path):

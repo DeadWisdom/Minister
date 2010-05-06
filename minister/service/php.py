@@ -50,7 +50,10 @@ class Service(fastcgi.Service, base.ProcessService):
             environ['PATH_INFO'] = path + '.php'
             environ['minister.php_info'] = '/' + info
         
-        return self._static(environ, start_response)
+        response = self._static(environ, start_response)
+        if response is None:
+            print "Static is none..."
+        return response
         
     def _handle(self, environ, start_response, path):
         _SERVER = environ
@@ -69,7 +72,10 @@ class Service(fastcgi.Service, base.ProcessService):
         if (environ['REQUEST_METHOD'] == 'POST' and not environ.get('CONTENT_TYPE')):
             _SERVER['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
         
-        return self._resource(_SERVER, start_response)
+        response = self._resource(_SERVER, start_response)
+        if response is None:
+            print "Resource is none..."
+        return response
     
     def find_index(self, path):
         """Find an index file in the directory specified at path."""
