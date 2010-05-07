@@ -66,20 +66,19 @@ def minister():
 ### Support ###
 def set_process_owner(spec):
     user, _, group = spec.partition(":")
-    if user:
-        print "Changing to user: %s" % user
-        os.setuid(pwd.getpwnam(user).pw_uid)
     if group:
         print "Changing to group: %s" % group
         os.setgid(grp.getgrnam(user).gr_gid)
-    else:
+    elif user:
         try:
             g_id = grp.getgrnam(user).gr_gid
-        except:
-            pass
-        else:
             print "Changing to group: %s" % user
             os.setgid(g_id)
+        except:
+            pass
+    if user:
+        print "Changing to user: %s" % user
+        os.setuid(pwd.getpwnam(user).pw_uid)
     return user, group
 
 
