@@ -1,6 +1,6 @@
-import sys, pwd, grp, os, json, atexit, logging
+import sys, pwd, grp, os, atexit, logging
 from optparse import OptionParser
-from util import fix_unicode_keys
+from util import fix_unicode_keys, json
 from manager import Manager
 
 ### Console Scripts ###

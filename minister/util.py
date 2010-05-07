@@ -6,7 +6,6 @@ try:
     import json
 except ImportError:
     import simplejson as json
-    
 
 class MutableFile(object):
     def __init__(self, path):
