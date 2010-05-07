@@ -145,7 +145,7 @@ serve on port 80::
 Now minister will be running in the background as a daemon process.  You can
 stop it with::
 
-    > sudo minister --stop
+    > sudo minister /var/minister --stop
 
 By default minister will check what user you ran sudo under and switch back 
 to it once it listens on port 80.  But you can also specify the user to run as::
