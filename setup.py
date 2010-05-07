@@ -28,6 +28,6 @@ setup(
     ],
     entry_points = {
         'console_scripts': [
-            'minister = minister.manager:run',
+            'minister = minister:run',
         ],
     })
