@@ -12,6 +12,12 @@ def minister():
         parser.print_usage()
         sys.exit(0)
     
+    # Address 
+    ip, _, port = options.socket.partition(':')
+    if port: port = int(port)
+    address = (ip, port)
+    
+    # User
     if options.user:
         address = Manager.listen(address)
         set_process_owner(options.user)
@@ -32,11 +38,6 @@ def minister():
     elif options.restart:
         if daemon.stop(pidfile):
             print "Minister stopped."
-    
-    # Address 
-    ip, _, port = options.socket.partition(':')
-    if port: port = int(port)
-    address = (ip, port)
     
     # Config
     config = get_config( os.path.join(path, 'config.json') )
