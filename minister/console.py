@@ -71,7 +71,15 @@ def set_process_owner(spec):
         os.setuid(pwd.getpwnam(user).pw_uid)
     if group:
         print "Changing to group: %s" % group
-        os.setgid(grp.getgrnam(group).gr_gid)
+        os.setgid(grp.getgrnam(user).gr_gid)
+    else:
+        try:
+            g_id = grp.getgrnam(user).gr_gid
+        except:
+            pass
+        else:
+            print "Changing to group: %s" % user
+            os.setgid(g_id)
     return user, group
 
 
