@@ -110,9 +110,12 @@ class ProxyService(Service):
         """
         For use as a wsgi app, will pipe to our proxy.
         """
+        print "Okay, getting response..."
         response = super(ProxyService, self).__call__(environ, start_response)
         if response is not None:
+            print "I have one!", response
             return response
+        print "Trying the proxy..."
         return self._proxy(environ, start_response)
 
 

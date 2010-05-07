@@ -153,8 +153,6 @@ class Manager(Resource):
             else:
                 return InternalServerError(exc_info=exc_info)(environ, start_response)
         
-        print "Response:", response
-        
         if self.debug:
             return DebugNotFound(self)(environ, start_response)
         else:
