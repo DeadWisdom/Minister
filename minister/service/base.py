@@ -268,6 +268,7 @@ class PythonService(ProcessProxyService):
         if self.virtualenv:
             path = os.path.abspath(os.path.join(self.path, self.virtualenv))
             environ['VIRTUAL_ENV'] = path
+            logging.info("Using virtualenv: %s", path)
             path_insert(environ, 'PATH', os.path.join(path, 'bin'))
         
         path_insert(environ, 'PYTHONPATH', os.path.abspath(self.path))

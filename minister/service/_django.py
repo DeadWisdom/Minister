@@ -17,7 +17,7 @@ class Service(base.PythonService):
 if __name__ == '__main__':
     settings = Service.setup_backend()
     
-    print sys.path
+    print os.environ
     
     from eventlet import wsgi
     from django.core.handlers.wsgi import WSGIHandler
