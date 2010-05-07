@@ -12,7 +12,7 @@ except ImportError, e:
 from minister.process import Process
 from minister.resource import Resource
 from minister.proxy import Proxy
-from minister.util import shell, json, fix_unicode_keys, get_logger, path_insert
+from minister.util import shell, json, fix_unicode_keys, path_insert
 from minister.middleware import Middleware
 
 class Service(Resource):
@@ -35,7 +35,6 @@ class Service(Resource):
     output = None
     
     _manager = None
-    _logger = logging.getLogger("minister")
     
     ### Instance Methods ###################
     def __init__(self, **kw):
@@ -68,11 +67,11 @@ class Service(Resource):
             for cmd in cmds:
                 out, err = shell(self.path, cmd)
                 if err:
-                    self._logger.error('> %s\n%s', cmd, err)
+                    logging.error('> %s\n%s', cmd, err)
                     self.stop()
                     return False
                 elif out:
-                    self._logger.info('> %s\n%s', cmd, out)
+                    logging.info('> %s\n%s', cmd, out)
         
         self.disabled = False
         return True
@@ -139,7 +138,7 @@ class ProcessService(Service):
     def start(self):
         environ = self.get_environ()
         for i in xrange(self.count):
-            process = Process(self.path, self.executable, self.args, environ, self._logger)
+            process = Process(self.path, self.executable, self.args, environ)
             self._processes.append( process )
             process.run()
         
@@ -203,7 +202,7 @@ class ProcessService(Service):
             plural = ''
         
         if failed:
-            self._logger.error("service failed: %s", self.path)
+            logging.error("service failed: %s", self.path)
             return False, '0 of %d process%s' % (total, plural)
         elif active == total:
             return True, '%d of %d process%s' % (active, total, plural)
@@ -259,11 +258,11 @@ class PythonService(ProcessProxyService):
             out, err = shell(self.path, cmd)
         
             if err:
-                self._logger.error('> %s\n%s', cmd, err)
+                logging.error('> %s\n%s', cmd, err)
                 self.stop()
                 return False
             elif out:
-                self._logger.info('> %s\n%s', cmd, out)
+                logging.info('> %s\n%s', cmd, out)
         
         return super(PythonService, self).start()
     

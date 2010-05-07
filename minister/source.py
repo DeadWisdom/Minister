@@ -26,16 +26,15 @@ class Source(object):
         return os.path.exists(path)
     
     def command(self, *args):
-        log = logging.getLogger("minister")
-        log.info("-" + " ".join(args))
+        logging.info("-" + " ".join(args))
         popen = subprocess.Popen(list(args), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = popen.communicate()
         
         if err:
-            log.error('    ' + '    \n'.join([line for line in err.split('\n')]))
+            logging.error('    ' + '    \n'.join([line for line in err.split('\n')]))
             
         if out:
-            log.error('    ' + '    \n'.join([line for line in out.split('\n')]))
+            logging.error('    ' + '    \n'.join([line for line in out.split('\n')]))
         
         return out or err
 

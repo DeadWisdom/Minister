@@ -9,13 +9,12 @@ class Process(object):
     allows you to check its status, rerun the process, and figure out if it
     has failed, meaning it has restarted 3 times in the past 30 seconds.
     """
-    def __init__(self, path=None, executable=None, args=[], env={}, logger=None):
+    def __init__(self, path=None, executable=None, args=[], env={}):
         self.pid = None
         self.path = os.path.abspath( path )
         self.executable = executable
         self.args = [executable] + args
         self.env = env
-        self.logger = logger
         self.returncode = None
         
         self._process = None
@@ -30,7 +29,7 @@ class Process(object):
                 line = self._process.stdout.readline()
                 if not line:
                     return
-                self.logger.info("- %s", line[:-1])
+                logging.info("- %s", line[:-1])
         def errloop():
             while True:
                 if not self._process:
@@ -38,7 +37,7 @@ class Process(object):
                 line = self._process.stderr.readline()
                 if not line:
                     return
-                self.logger.info("- %s", line[:-1])
+                logging.error("- %s", line[:-1])
         eventlet.spawn_n(outloop)
         eventlet.spawn_n(errloop)
     
@@ -57,7 +56,7 @@ class Process(object):
                                 cwd = self.path,
                                 env = self.env)
         except OSError, e:
-            self.logger.error("%s - %s", " ".join(self.args), e)
+            logging.error("%s - %s", " ".join(self.args), e)
             return False
             
         self.readloop()

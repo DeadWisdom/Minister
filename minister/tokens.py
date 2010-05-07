@@ -5,7 +5,7 @@ try:
 except ImportError:
     import simplejson as json
 
-import sys, os
+import sys, os, logging
 from uuid import uuid4
 from service import Service
 from resource import Resource
@@ -44,7 +44,6 @@ class ServiceToken(object):
         self.override['path'] = self.path
         self.deploy_options = self.override.copy()
         self.deploy_file = None
-        self.log = manager.log
         self.call_chain = None
         
     ### Options ###
@@ -85,7 +84,7 @@ class ServiceToken(object):
                 self.deploy_file = MutableFile(path)
                 self.deploy_options = fix_unicode_keys( json.load(self.deploy_file) )
             except Exception, e:
-                self.log.error("Bad service.json - %s: %s" % (path, e))
+                logging.error("Bad service.json - %s: %s" % (path, e))
                 self.deploy_file = None
                 self.deploy_options = {}
                 self.status = "failed"
@@ -130,7 +129,6 @@ class ServiceToken(object):
         try:
             options = self.load_options().copy()
             options['_manager'] = self.manager
-            options['_logger'] = self.log
         except Exception, e:
             if self.status == 'deploying':
                 self.status = 'failed'
@@ -140,7 +138,7 @@ class ServiceToken(object):
         if not options.get('type'):
             self.status = "mia"
             self.status_info = "Service type not found."
-            self.log.error("Service lacks service type: %s", self.path)
+            logging.error("Service lacks service type: %s", self.path)
             return
         
         cls = Service.get_class(options['type'] + ":service")
@@ -151,13 +149,13 @@ class ServiceToken(object):
             if cls is None:
                 self.status = "failed"
                 self.status_info = "Cannot find service type: %s" % options['type']
-                self.log.error(self.status_info)
+                logging.error(self.status_info)
                 return
         
         try:
             self.service = Resource.create(options)
         except Exception, e:
-            self.log.exception(e)
+            logging.exception(e)
             if self.status == 'deploying':
                 self.status = 'failed'
                 self.status_info = "Error in deployment."
@@ -222,16 +220,17 @@ class ServiceToken(object):
         while True:
             try:
                 if self.deploy_file and self.deploy_file.is_stale():
-                    self.log.info("reloading service: %s", self.path)
+                    logging.info("reloading service: %s", self.path)
                     return self.redeploy()
-                healthy, info = self.service.get_health()
-                if not healthy:
-                    self.status = "failed"
-                else:
-                    self.status = "active"
-                    self.status_info = info
+                if self.status != "failed":
+                    healthy, info = self.service.get_health()
+                    if not healthy:
+                        self.status = "failed"
+                    else:
+                        self.status = "active"
+                        self.status_info = info
             except Exception, e:
-                self.log.exception(e)
+                logging.exception(e)
             eventlet.sleep(interval)
     
     def info(self):

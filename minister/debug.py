@@ -1,9 +1,6 @@
 import traceback, os, re
 from util import simple_template, error_info
 
-import logging
-logger = logging.getLogger('minister')
-
 template_base = """<html><head>
 <title>{{title}}</title>
 <style>

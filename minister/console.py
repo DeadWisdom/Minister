@@ -1,4 +1,4 @@
-import sys, pwd, grp, os, json, atexit
+import sys, pwd, grp, os, json, atexit, logging
 from optparse import OptionParser
 from util import fix_unicode_keys
 from manager import Manager
@@ -41,6 +41,20 @@ def minister():
     if options.debug:
         config['debug'] = True
     
+    # Logging
+    if options.debug:
+        level = "DEBUG"
+    else:
+        level = "INFO"
+    setup_logger(
+        level = level,
+        count = 4,
+        bytes = 2**25,       # 32Mb
+        format = "%(asctime)s - %(levelname)s - %(message)s",
+        echo = options.verbose,
+        path = os.path.join(path, 'logs/minister.log')
+    )
+    
     # Daemon Start
     if options.start or options.restart:
         print "Minister daemon starting..."
@@ -80,6 +94,40 @@ def get_config(path):
     finally:
         if file: file.close()
     return config
+
+
+def setup_logger(level = "INFO",
+                 count = 4,
+                 bytes = 2**25,       # 32Mb
+                 format = "%(asctime)s - %(levelname)s - %(message)s",
+                 echo = False,
+                 path = None ):
+    
+    base = os.path.dirname(path)
+    if not os.path.isdir(base):
+        os.makedirs(base)
+    
+    logger = logging.getLogger()
+    logger.setLevel(getattr( logging, level.upper() ))
+
+    formatter = logging.Formatter(format)
+    
+    handler = logging.handlers.RotatingFileHandler(path, maxBytes=bytes, backupCount=count)
+    handler.setLevel(getattr( logging, level.upper() ))
+    handler.setFormatter(formatter)
+    logger.addHandler( handler )
+    
+    if not echo:
+        echo = "WARNING"
+    handler = logging.StreamHandler()
+    if isinstance(echo, basestring):
+        handler.setLevel(getattr( logging, echo.upper() ))
+    else:
+        handler.setLevel(getattr( logging, level.upper() ))
+    handler.setFormatter(formatter)
+    logger.addHandler( handler )
+
+    return logger
 
 
 def get_parser():
