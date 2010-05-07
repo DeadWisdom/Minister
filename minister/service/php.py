@@ -28,6 +28,10 @@ class Service(fastcgi.Service, base.ProcessService):
             for pair in self.options.items():
                 self.args.extend(['-d', '%s=%s' % pair])
         
+        super(Service, self).init()
+        self._fastcgi = self._proxy
+        del self._proxy
+        
         self._static = Static(index=self.index, root=self.path, allow=None)
         self._static.set_handler('php', self._handle)
     
@@ -68,7 +72,7 @@ class Service(fastcgi.Service, base.ProcessService):
         if (environ['REQUEST_METHOD'] == 'POST' and not environ.get('CONTENT_TYPE')):
             _SERVER['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
         
-        response = self._resource(_SERVER, start_response)
+        response = self._fastcgi(_SERVER, start_response)
         return response
     
     def find_index(self, path):
