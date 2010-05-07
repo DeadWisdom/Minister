@@ -12,6 +12,10 @@ def minister():
         parser.print_usage()
         sys.exit(0)
     
+    if options.user:
+        address = Manager.listen(address)
+        set_process_owner(options.user)
+        
     # Path
     path = args[0]
     if not os.path.exists(path):
@@ -51,10 +55,6 @@ def minister():
     if options.start or options.restart:
         print "Minister daemon starting..."
         daemon.start(pidfile)
-    
-    if options.user:
-        address = Manager.listen(address)
-        set_process_owner(options.user)
     
     # Start 'er up.
     manager = Manager(**config)
