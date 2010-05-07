@@ -39,5 +39,7 @@ def MethodNotAllowed(allowed=[]):
 def InternalServerError(content=render("500 Internal Server Error")):
     return Response(status="500 Internal Server Error", content=content)
 
-def BadGateway(content=render('502 Bad Gateway', "Name or service not known, bad domain name.")):
+def BadGateway(msg = "Name or service not known, bad domain name.", content=None):
+    if content is None:
+        content = render('502 Bad Gateway', msg)
     return Response(status="502", content=content)

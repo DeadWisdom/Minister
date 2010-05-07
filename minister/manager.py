@@ -5,7 +5,7 @@ from eventlet import wsgi
 from eventlet.green import socket
 
 import daemon
-from http import NotFound, InternalServerError
+from http import NotFound, InternalServerError, BadGateway
 from debug import DebugNotFound, DebugInternalServerError
 from resource import Resource
 from tokens import ServiceToken
@@ -108,6 +108,8 @@ class Manager(Resource):
                     continue
                 if not service.match_site(hostname):
                     continue
+                if service.status == 'failed':
+                    return BadGateway(msg="Service failed, unnable to continue request.")(environ, start_response)
                 delta = service.match_path(requested_path)
                 if delta is not None:
                     logging.debug("request to %s", service.slug)
