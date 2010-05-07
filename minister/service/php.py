@@ -51,7 +51,6 @@ class Service(fastcgi.Service, base.ProcessService):
             environ['minister.php_info'] = '/' + info
         
         response = self._static(environ, start_response)
-        print "Static:", response
         return response
         
     def _handle(self, environ, start_response, path):
@@ -72,7 +71,6 @@ class Service(fastcgi.Service, base.ProcessService):
             _SERVER['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
         
         response = self._resource(_SERVER, start_response)
-        print "Resource:", response
         return response
     
     def find_index(self, path):

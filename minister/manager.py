@@ -124,6 +124,8 @@ class Manager(Resource):
             else:
                 return InternalServerError(exc_info=exc_info)(environ, start_response)
         
+        logging.debug("Resource not found:", environ['ORIG_PATH_INFO'])
+        
         if self.debug:
             return DebugNotFound(self)(environ, start_response)
         else:

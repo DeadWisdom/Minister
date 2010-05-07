@@ -5,7 +5,7 @@ from eventlet.green import socket
 from minister.fastcgi import FastCGI
 from minister.resource import Resource
 
-class Service(base.Service):
+class Service(base.ProxyService):
     ### Properties #########################
     type = 'fastcgi:service'
     executable = None
