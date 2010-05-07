@@ -120,11 +120,11 @@ class Manager(Resource):
                         return response
                     
         except Exception, e:
-            exc_info = sys.exc_info()
             if self.debug:
+                exc_info = sys.exc_info()
                 return DebugInternalServerError(exc_info=exc_info)(environ, start_response)
             else:
-                return InternalServerError(exc_info=exc_info)(environ, start_response)
+                return InternalServerError()(environ, start_response)
         
         logging.debug("Resource not found: %s", environ['ORIG_PATH_INFO'])
         

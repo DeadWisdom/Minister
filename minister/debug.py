@@ -79,7 +79,7 @@ traceback_template = """<div class='frame'>
     <div class='short'>{{short}}</div><div class='filename'>{{filename}}</div> &mdash; line {{lineno}}
     <pre>{{src}}</pre>"""
 
-def DebugInternalServerError(exc_info):
+def DebugInternalServerError(exc_info=None):
     def app(environ, start_response):
         exc_type, exc_value, tb = exc_info
         start_response('500 Internal Server Error', [])

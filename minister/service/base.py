@@ -253,6 +253,8 @@ class PythonService(ProcessProxyService):
             out, err = shell(self.path, cmd)
         
             if err:
+                if "mysql-python" in self.requires:
+                    logging.warning("mysql-python might require 'mysql_config'; 'apt-get install libmysqlclient-dev' or your package management equivalent might fix this problem.")
                 logging.error('> %s\n%s', cmd, err)
                 self.stop()
                 return False
