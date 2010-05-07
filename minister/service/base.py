@@ -289,7 +289,7 @@ class PythonService(ProcessProxyService):
         dct['socket'] = socket.fromfd( dct['socket'], socket.AF_INET, socket.SOCK_STREAM )
         
         if "VIRTUAL_ENV" in os.environ:
-            activate_this = os.environ['VIRTUAL_ENV']
+            activate_this = os.path.join( os.environ['VIRTUAL_ENV'], 'bin', 'activate_this.py' )
             execfile(activate_this, dict(__file__=activate_this))
         
         return dct
