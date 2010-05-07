@@ -244,7 +244,7 @@ class PythonService(ProcessProxyService):
     
     ### Properties #######################
     virtualenv = "env"
-    requires = ['minister', 'eventlet']
+    requires = ['eventlet']
     
     ### Methods ##########################
     def start(self):
