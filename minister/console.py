@@ -42,15 +42,7 @@ def minister():
         config['debug'] = True
     
     # Logging
-    if options.debug:
-        level = "DEBUG"
-    else:
-        level = "INFO"
     setup_logger(
-        level = level,
-        count = 4,
-        bytes = 2**25,       # 32Mb
-        format = "%(asctime)s - %(levelname)s - %(message)s",
         echo = options.verbose,
         path = os.path.join(path, 'logs/minister.log')
     )
@@ -108,7 +100,7 @@ def setup_logger(level = "INFO",
         os.makedirs(base)
     
     logger = logging.getLogger()
-    logger.setLevel(getattr( logging, level.upper() ))
+    logger.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter(format)
     
