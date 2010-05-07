@@ -110,10 +110,10 @@ class Manager(Resource):
                     continue
                 delta = service.match_path(requested_path)
                 if delta is not None:
+                    logging.debug("request to %s", service.slug)
                     environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + requested_path[:len(requested_path)-len(delta)]
                     environ['PATH_INFO'] = delta
                     response = service(environ, start_response)
-                    print "Service:", service.slug, response
                     if response is not None:
                         return response
                     
