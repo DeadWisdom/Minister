@@ -26,7 +26,7 @@ This creates the new virtualenv, downloading, and installing minister and all
 required libraries (simplejson, greenlet, and eventlet). We can then run
 minister via the virtual env::
 
-    > minister/bin/minister
+    > minister/bin/minister repo
 
 You are now running minister. Checkout `http://localhost:8000 <http://localhost:8000>`_.
 Okay right, 404 Not Found. That's because there's nothing to find yet.  Except
@@ -35,16 +35,15 @@ for the admin at `http://localhost:8000/minister/ <http://localhost:8000/ministe
 Currently there is only one service running, the admin itself.  Let's create
 a simple WSGI app, and drop it in.
 
-Minister uses a repository to store its log files and services. By default the
-repository is ``~/.minister`` or ``/var/minister`` if you run as root. This
-can be changed with the ``--path`` command-line option.
+Minister uses a repository to store its log files and services.  We just made
+a repository directory named "repo", but we could user any path.
 
 Minister will look in ``<repository>/services`` for services and automatically
 deploy them. So we will create a new service directory named ``simple`` and
 the two files we need::
 
-    > mkdir ~/.minister/services/simple
-    > cd ~/.minister/services/simple
+    > mkdir repo/services/simple
+    > cd repo/services/simple
     > touch serve.py
     > touch service.json
 
@@ -113,7 +112,7 @@ from the source root through the simple ``dev`` python script::
 
 To use the test repository do::
 
-    > ./dev --path tests/repo
+    > ./dev tests/repo
 
 If you see errors after that, it's probably because you don't have php-cgi
 installed, which is fine. That particular php service will be disabled and you 
@@ -123,27 +122,33 @@ There is also a ``--debug`` mode, which is handy for development because it
 will give you a traceback on a 500 (internal server error), and a nice break
 down of available resources on a 404 (not found error)::
 
-    > ./dev -p tests/repo --debug
+    > ./dev tests/repo --debug
 
 And finally to see all of the log statements do ``--verbose``. These logs are
 normally sent to ``<repository>/logs/minister.log``, but will now go to both
 the log file and your terminal::
 
-    > ./dev -p tests/repo -d --verbose
+    > ./dev tests/repo -d --verbose
     
 Thusly, for development I will often do::
 
-    > ./dev -dv -p tests/repo
+    > ./dev tests/repo -dv
 
 Running in Production
 -----------------------
 
-For production, you can enter daemon mode with ``--start``, and also set a 
-user to run as::
+For production, you can enter daemon mode with ``--start``, we must sudo to
+serve on port 80::
 
-    > sudo minister --start --user www-data
+    > sudo minister /var/minister --start
 
 Now minister will be running in the background as a daemon process.  You can
 stop it with::
 
     > sudo minister --stop
+
+By default minister will check what user you ran sudo under and switch back 
+to it once it listens on port 80.  But you can also specify the user to run as::
+
+    > sudo minister /var/minister --user www-data:www-data --start
+    
