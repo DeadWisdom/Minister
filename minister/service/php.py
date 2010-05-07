@@ -28,8 +28,6 @@ class Service(fastcgi.Service, base.ProcessService):
             for pair in self.options.items():
                 self.args.extend(['-d', '%s=%s' % pair])
         
-        super(Service, self).init()
-        
         self._static = Static(index=self.index, root=self.path, allow=None)
         self._static.set_handler('php', self._handle)
     

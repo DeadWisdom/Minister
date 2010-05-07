@@ -5,9 +5,10 @@ from eventlet.green import socket
 from minister.fastcgi import FastCGI
 from minister.resource import Resource
 
-class Service(base.ProxyService):
+class Service(base.Service):
     ### Properties #########################
     type = 'fastcgi:service'
+    address = ('', 0)
     executable = None
     requires = []
     name = "Unnamed FCGI Service"
@@ -16,7 +17,13 @@ class Service(base.ProxyService):
     
     ### Instance Methods ###################
     def init(self):
-        self._resource = FastCGI(address=self.address, filter=self.filter)
+        self._proxy = FastCGI(address=self.address, filter=self.filter)
     
-    def _proxy(self, environ, start_response):
-        self._resource(environ, start_response)
+    def __call__(self, environ, start_response):
+        """
+        For use as a wsgi app, will pipe to our proxy.
+        """
+        response = super(Service, self).__call__(environ, start_response)
+        if response is not None:
+            return response
+        return self._proxy(environ, start_response)
