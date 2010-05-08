@@ -107,11 +107,11 @@ class Manager(Resource):
                     continue
                 if not service.match_site(hostname):
                     continue
-                if service.status == 'failed':
-                    return BadGateway(msg="Service failed, unnable to continue request.")(environ, start_response)
                 delta = service.match_path(requested_path)
                 if delta is not None:
-                    logging.debug("request to %s", service.slug)
+                    logging.debug("request sent to %s: %s", service.slug, environ['ORIG_PATH_INFO'])
+                    if service.status == 'failed':
+                        return BadGateway(msg="Service failed, unnable to continue request.")(environ, start_response)
                     environ['SCRIPT_NAME'] = environ['SCRIPT_NAME'] + requested_path[:len(requested_path)-len(delta)]
                     environ['PATH_INFO'] = delta
                     response = service(environ, start_response)
@@ -141,6 +141,7 @@ class Manager(Resource):
     
     def update(self):
         for service in self.services:
+            print "Updating services..."
             if service.status in ("active", "failed", "disabled", "mia"):
                 try:
                     if service.check_source():

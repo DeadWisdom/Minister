@@ -120,13 +120,11 @@ def setup_logger(level = "INFO",
     handler.setFormatter(formatter)
     logger.addHandler( handler )
     
-    if not echo:
-        echo = "WARNING"
     handler = logging.StreamHandler()
-    if isinstance(echo, basestring):
-        handler.setLevel(getattr( logging, echo.upper() ))
+    if echo:
+        handler.setLevel(logging.DEBUG)
     else:
-        handler.setLevel(getattr( logging, level.upper() ))
+        handler.setLevel(logging.WARNING)
     handler.setFormatter(formatter)
     logger.addHandler( handler )
 
@@ -159,7 +157,7 @@ def get_parser():
                         
     parser.add_option("-v", "--verbose", 
                         action="store_true", dest="verbose",
-                        help="Output logging info to stdout.", 
+                        help="Output all logging to stdout.", 
                         default=False)
                         
     parser.add_option("-d", "--debug", 

@@ -1,5 +1,6 @@
 import os, sys
 import base
+from minister.util import shell
 
 class Service(base.ProcessService):
     type = 'redis:service'
@@ -8,4 +9,10 @@ class Service(base.ProcessService):
     source = "http://redis.googlecode.com/files/redis-1.2.6.tar.gz"
     count = 1
     executable = "redis-server"
-    before_deploy = ["make"]
+    
+    def start(self):
+        out, err = shell(self.path, 'make')
+        if out:
+            logging.info('> make\n%s', out)
+        
+        return super(Service, self).start()

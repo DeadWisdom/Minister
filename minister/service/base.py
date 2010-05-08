@@ -26,7 +26,6 @@ class Service(Resource):
     path = None
     resources = None
     root = None
-    url = ""
     middleware = None
     
     input = None

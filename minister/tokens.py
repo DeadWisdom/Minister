@@ -130,7 +130,7 @@ class ServiceToken(object):
         if not options.get('type'):
             self.status = "mia"
             self.status_info = "Service type not found."
-            logging.error("Service lacks service type: %s", self.path)
+            logging.error("Service (%s) type not found: %s", self.slug, self.path)
             return
         
         cls = Service.get_class(options['type'] + ":service")
@@ -152,6 +152,8 @@ class ServiceToken(object):
                 self.status = 'failed'
                 self.status_info = "Error in deployment."
             return
+        
+        self.check_source()
         
         if self.service.disabled:
             self.status = 'disabled'
@@ -187,11 +189,14 @@ class ServiceToken(object):
                 return
     
     def check_source(self):
+        logging.info("Checking source: %s", self.slug)
         if self.source:
             return self.source.check(self.path)
         elif self.service and hasattr(self.service, 'source'):
             typ, _, src = self.service.source.partition(":")
             self.source = Source(type=typ, src=src)
+            logging.info("%r", self.source.__dict__)
+            self.update_source()
         return True
     
     def is_valid(self):
