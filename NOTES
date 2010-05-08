@@ -2,7 +2,6 @@
     Fix absolute path problem that Cosmin found.
     Source Fixes - (make sure everything works properly)
     Task System - (like cron, but you know better)
-    LogPath - (fix the logs to take a logpath instead of path+name)
     Basic / Digest Auth
     SSL Support
     Better Admin - (manage services, logs, etc)
@@ -32,3 +31,4 @@
  -- Use As My Actual Webserver Milestone --
     Virtual Env System - (yay pip)
     Project Website
+    Logs have been redone, simple like.
