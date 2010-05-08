@@ -5,4 +5,5 @@ import admin
 import base
 import fastcgi
 import php
+import rails
 import wsgi

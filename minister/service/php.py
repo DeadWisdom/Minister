@@ -16,7 +16,6 @@ class Service(fastcgi.Service, base.ProcessService):
     options = {}
     num_processes = 1
     index = ('index.php', 'index.html')
-    port_range = (10000, 20000)
     
     def init(self):
         if (self.address[1] == 0):
@@ -83,18 +82,3 @@ class Service(fastcgi.Service, base.ProcessService):
                 return candidate
         return None
     
-    _used_addresses = set()
-    def find_port(self):
-        host = self.address[0]
-        for port in range(*self.port_range):
-            if (host, port) in self._used_addresses:
-                continue
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                s.bind((host, port))
-            except socket.error, e:
-                continue
-            else:
-                self._used_addresses.add((host, port))
-                s.close()
-                return host, port

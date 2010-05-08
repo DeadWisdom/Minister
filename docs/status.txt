@@ -21,6 +21,7 @@ Current Features
  * Debugging error pages (option --debug)
  * Daemonization (option --start / --stop / --restart)
  * Python WSGI service
+ * Virtual Env / Pip system to manage Python service requirements
  * Django service
  * PHP service
  * Native Admin page to check the server status
@@ -35,7 +36,6 @@ Planned Features
  * Task system (somewhat like cron)
  * Digest Auth
  * SSL Support
- * Virtual Env / Pip system to manage python service requirements
  * Gem management for ruby service requirements
  * Resource / Health monitoring
  * Continued Integration support for services (testing, etc)

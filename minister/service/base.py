@@ -96,6 +96,7 @@ class ProxyService(Service):
     type = "proxy:service"
     
     ### Properties #######################
+    port_range = (10000, 20000)
     address = ('', 0)
     
     ### Methods ##########################
@@ -111,6 +112,23 @@ class ProxyService(Service):
         if response is not None:
             return response
         return self._proxy(environ, start_response)
+    
+    _used_addresses = set()
+    def find_port(self):
+        host = self.address[0]
+        for port in range(*self.port_range):
+            if (host, port) in self._used_addresses:
+                continue
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind((host, port))
+            except socket.error, e:
+                continue
+            else:
+                self._used_addresses.add((host, port))
+                s.close()
+                return host, port
 
 
 class ProcessService(Service):
@@ -132,6 +150,7 @@ class ProcessService(Service):
         
     def start(self):
         environ = self.get_environ()
+        logging.info("running - %s %s", self.executable, " ".join(self.args))
         for i in xrange(self.count):
             process = Process(self.path, self.executable, self.args, environ)
             self._processes.append( process )
