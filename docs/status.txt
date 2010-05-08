@@ -25,12 +25,12 @@ Current Features
  * Django service
  * PHP service
  * Redis service
+ * Rails service
  * Native Admin page to check the server status
  
 Planned Features
 ------------------
 
- * Ruby service
  * Java service
  * Memcachedb service
  * Task system (somewhat like cron)
