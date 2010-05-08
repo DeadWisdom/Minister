@@ -29,9 +29,6 @@ def resolve_app(sig):
 if __name__ == '__main__':
     settings = Service.setup_backend()
     
-    print "Starting service."
-    print sys.path
-    
     from eventlet import wsgi
     wsgi.server(settings['socket'], resolve_app(settings['app']))
     

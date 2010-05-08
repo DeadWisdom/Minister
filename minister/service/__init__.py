@@ -6,4 +6,5 @@ import base
 import fastcgi
 import php
 import rails
+import redis
 import wsgi

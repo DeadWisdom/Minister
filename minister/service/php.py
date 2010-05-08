@@ -10,7 +10,6 @@ from minister.static import Static
 
 class Service(fastcgi.Service, base.ProcessService):
     type = 'php:service'
-    address = ('127.0.0.1', 0)
     executable = 'php-cgi'
     ini = None
     options = {}
@@ -28,11 +27,13 @@ class Service(fastcgi.Service, base.ProcessService):
                 self.args.extend(['-d', '%s=%s' % pair])
         
         super(Service, self).init()
-        self._fastcgi = self._proxy
-        del self._proxy
         
         self._static = Static(index=self.index, root=self.path, allow=None)
         self._static.set_handler('php', self._handle)
+    
+    def start(self):
+        # Avoid the fastcgi part.
+        base.ProcessService.start(self)
     
     def _proxy(self, environ, start_response):
         if 'REQUEST_URI' not in environ:

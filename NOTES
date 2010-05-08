@@ -12,7 +12,6 @@
     Profile System - (profile services, but also a profile website like pypy)
     Plugin System
     Memcachedb Service
-    Redis System
     User Documentation
  -- Version 0.9 Release --
     Bugfixes / Etc.
@@ -33,3 +32,4 @@
     Project Website
     Logs have been redone, simple like.
     Ruby Service 
+    Redis System

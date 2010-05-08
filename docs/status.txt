@@ -24,6 +24,7 @@ Current Features
  * Virtual Env / Pip system to manage Python service requirements
  * Django service
  * PHP service
+ * Redis service
  * Native Admin page to check the server status
  
 Planned Features
@@ -32,7 +33,6 @@ Planned Features
  * Ruby service
  * Java service
  * Memcachedb service
- * Redis service
  * Task system (somewhat like cron)
  * Digest Auth
  * SSL Support

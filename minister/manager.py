@@ -147,7 +147,7 @@ class Manager(Resource):
                         logging.info("reloading service: %s", service.path)
                         service.redeploy()
                 except Exception, e:
-                    logging.exception("error updating service: %s", e)
+                    logging.exception("error updating service (%s): %s", service.slug, e)
     
     def get_service(self, k):
         return self._token_map[k]

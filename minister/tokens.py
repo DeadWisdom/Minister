@@ -111,18 +111,8 @@ class ServiceToken(object):
         if self.deploy_options.get('disabled'):
             self.status = 'disabled'
             return
-        
-        self.status = 'updating'
-        if not self.source:
-            source = self.get('source')
-            if source:
-                typ, _, src = source.partition(":")
-                self.source = Source(type=typ, src=src)
-        
-        if self.source:
-            if not self.source.update(self.path):
-                self.status = 'mia'
-                return
+            
+        self.update_source()
         
         self.status = "deploying"
         
@@ -130,10 +120,12 @@ class ServiceToken(object):
             options = self.load_options().copy()
             options['_manager'] = self.manager
         except Exception, e:
-            if self.status == 'deploying':
+            if self.status not in ('failed', 'mia'):
                 self.status = 'failed'
                 self.status_info = "Error in deployment."
             return
+        
+        self.status = "deploying"
         
         if not options.get('type'):
             self.status = "mia"
@@ -181,9 +173,25 @@ class ServiceToken(object):
             raise RuntimeError("Service not deployed.")
         return self.service.match_site(hostname)
     
+    def update_source(self):
+        self.status = 'updating'
+        if not self.source:
+            source = self.get('source')
+            if source:
+                typ, _, src = source.partition(":")
+                self.source = Source(type=typ, src=src)
+        
+        if self.source:
+            if not self.source.update(self.path):
+                self.status = 'mia'
+                return
+    
     def check_source(self):
         if self.source:
             return self.source.check(self.path)
+        elif self.service and hasattr(self.service, 'source'):
+            typ, _, src = self.service.source.partition(":")
+            self.source = Source(type=typ, src=src)
         return True
     
     def is_valid(self):

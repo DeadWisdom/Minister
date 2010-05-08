@@ -169,6 +169,7 @@ class HttpSource(Source):
         return True
     
     def download(self, path):
+        logging.info("Updating source - http:%s", self.src)
         con, path = self.get_connection_and_path()
         con.request('GET', path)
         response = con.getresponse()

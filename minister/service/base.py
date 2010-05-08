@@ -97,11 +97,11 @@ class ProxyService(Service):
     
     ### Properties #######################
     port_range = (10000, 20000)
-    address = ('', 0)
+    address = ('127.0.0.1', 0)
     
     ### Methods ##########################
-    def __init__(self, **kw):
-        super(ProxyService, self).__init__(**kw)
+    def start(self):
+        super(ProxyService, self).start()
         self._proxy = Resource.create({'type': 'proxy', 'address': self.address})
     
     def __call__(self, environ, start_response):
@@ -160,7 +160,10 @@ class ProcessService(Service):
         
     def stop(self):
         for process in self._processes:
-            process.kill()
+            try:
+                process.kill()
+            except:
+                pass
         self._processes = []
         
         super(ProcessService, self).stop()

@@ -5,10 +5,9 @@ from eventlet.green import socket
 from minister.fastcgi import FastCGI
 from minister.resource import Resource
 
-class Service(base.Service):
+class Service(base.ProxyService):
     ### Properties #########################
     type = 'fastcgi:service'
-    address = ('', 0)
     executable = None
     requires = []
     name = "Unnamed FCGI Service"
@@ -16,7 +15,8 @@ class Service(base.Service):
     filter = False
     
     ### Instance Methods ###################
-    def init(self):
+    def start(self):
+        super(base.ProxyService, self).start()
         self._proxy = FastCGI(address=self.address, filter=self.filter)
     
     def __call__(self, environ, start_response):
