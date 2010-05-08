@@ -9,7 +9,6 @@
     Mailing List
  -- Beta Release Milestone --
     Tests
-    Ruby Service - (gem manager?)
     Profile System - (profile services, but also a profile website like pypy)
     Plugin System
     Memcachedb Service
@@ -17,6 +16,7 @@
     User Documentation
  -- Version 0.9 Release --
     Bugfixes / Etc.
+    Ruby Gem Manager (Sandbox?)
     Project Website Redux
     Propaganda
  -- Version 1.0 Release --
@@ -32,3 +32,4 @@
     Virtual Env System - (yay pip)
     Project Website
     Logs have been redone, simple like.
+    Ruby Service 
