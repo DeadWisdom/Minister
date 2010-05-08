@@ -1,7 +1,10 @@
 import sys, pwd, grp, os, atexit, logging
+import daemon
+
 from optparse import OptionParser
 from util import fix_unicode_keys, json
 from manager import Manager
+
 
 ### Console Scripts ###
 def minister():

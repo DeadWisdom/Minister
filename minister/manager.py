@@ -1,16 +1,15 @@
-import os, sys, atexit, logging
+import os, sys, logging
 
 import eventlet
 from eventlet import wsgi
 from eventlet.green import socket
 
-import daemon
 from http import NotFound, InternalServerError, BadGateway
 from debug import DebugNotFound, DebugInternalServerError
 from resource import Resource
 from tokens import ServiceToken
 from service import Service
-from util import json, fix_unicode_keys, FileLikeLogger
+from util import json, FileLikeLogger
 
 class Manager(Resource):
     type = 'manager'
@@ -36,6 +35,17 @@ class Manager(Resource):
             self.add_service(s['path'], s)
             
         self.resources = Resource.create(self.resources)
+        
+        for service in self.services:
+            logging.info("loading service: %s", service.path)
+            service.deploy()
+            
+        service_path = os.path.join(self.path, 'services')
+        if not os.path.exists(service_path):
+            os.makedirs(service_path)
+        
+        self.periodically(self.scan, 1)
+        self.periodically(self.update, 60 * 30)
     
     def save(self):
         file = open(os.path.join(self.path, 'config.json'), 'w')
@@ -65,17 +75,6 @@ class Manager(Resource):
     def serve(self, where=('', 8000), debug=False):
         if self._socket:
             return
-        
-        for service in self.services:
-            logging.info("loading service: %s", service.path)
-            service.deploy()
-            
-        service_path = os.path.join(self.path, 'services')
-        if not os.path.exists(service_path):
-            os.makedirs(service_path)
-        
-        self.periodically(self.scan, 1)
-        self.periodically(self.update, 60 * 30)
         
         try:
             if isinstance(where, socket.socket):
