@@ -5,22 +5,25 @@
     Basic / Digest Auth
     SSL Support
     Better Admin - (manage services, logs, etc)
-    Resource / Health Monitoring
     Mailing List
+    Write Tests
  -- Beta Release Milestone --
-    Tests
+    Resource / Health Monitoring
     Profile System - (profile services, but also a profile website like pypy)
     Plugin System
     Memcachedb Service
     User Documentation
+    Write Tests
  -- Version 0.9 Release --
     Bugfixes / Etc.
     Ruby Gem Manager (Sandbox?)
     Project Website Redux
     Propaganda
+    Write Tests
  -- Version 1.0 Release --
     Make Distributed
     Create Servers on the Fly
+    Write Tests
  
 = DONE =
     Fix README
@@ -33,3 +36,4 @@
     Logs have been redone, simple like.
     Ruby Service 
     Redis System
+    Some Tests
