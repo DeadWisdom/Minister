@@ -1,0 +1,6 @@
+USER = ''                       # User
+KEY = ''                        # Key
+DRIVER = "RACKSPACE"            # Driver
+IMAGE = 5                       # Image index
+SIZE = 0                        # Size index
+SSH_PUB = "~/.ssh/id_rsa.pub"   # File with ssh public key

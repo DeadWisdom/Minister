@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!DOCTYPE tsung SYSTEM "/usr/share/tsung/tsung-1.0.dtd" []>
+<tsung loglevel="warning">
+    <clients>
+        <client host="173.203.99.242" use_controller_vm="false" maxusers="800"/>
+<client host="173.203.96.242" use_controller_vm="false" maxusers="800"/>
+    </clients>
+    <servers>
+        <server host="173.203.125.244" port="8000" type="tcp"/>
+    </servers>
+    <monitoring>
+        <monitor host="173.203.125.244" type="erlang"/>
+    </monitoring>
+ 
+    <load>
+        <arrivalphase phase="1" duration="5" unit="minute">
+            <users interarrival="0.002" unit="second"/>
+        </arrivalphase>
+    </load>
+ 
+    <sessions>
+        <session name='wsgitest' probability='100'  type='ts_http'>
+            <for from="0" to="12" incr="1" var="counter">
+                <request>
+                    <http url="http://173.203.125.244/" version="1.1" method="GET"/>
+                </request>
+                <thinktime random='false' value='5'/>
+            </for>
+        </session>
+    </sessions>
+</tsung>

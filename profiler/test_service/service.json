@@ -1,0 +1,8 @@
+{
+    "name": "pong.py",
+    "url": "",
+    "site": "*",
+    
+    "type": "wsgi",
+    "app": "pong.application"
+}
