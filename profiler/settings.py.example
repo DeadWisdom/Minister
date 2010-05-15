@@ -4,3 +4,4 @@ DRIVER = "RACKSPACE"            # Driver
 IMAGE = 5                       # Image index
 SIZE = 0                        # Size index
 SSH_PUB = "~/.ssh/id_rsa.pub"   # File with ssh public key
+NUM_CLIENTS = 2                 # Number of clients to start
